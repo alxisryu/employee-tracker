@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum DeviceType {
+  MOCK       // CLI mock / test script
+  PI_READER  // Raspberry Pi with hardware NFC reader
+  MANUAL_UI  // Web UI manual simulator
+}
+
+// Every scan attempt gets exactly one of these outcomes.
+// This is the canonical audit field — never vague booleans.
+enum ScanOutcome {
+  ACCEPTED_IN           // Employee checked in
+  ACCEPTED_OUT          // Employee checked out (toggle)
+  DUPLICATE_IGNORED     // Scan within debounce window — ignored
+  UNKNOWN_TAG           // tagId not in Tag table
+  INACTIVE_TAG          // Tag exists but isActive = false
+  INACTIVE_EMPLOYEE     // Tag resolves to employee but employee isActive = false
+  DEVICE_UNAUTHORISED   // Device not recognised or bad auth
+}
+
+enum PresenceStatus {
+  IN
+  OUT
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Employee {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags       Tag[]
+  scanEvents ScanEvent[]
+  attendance AttendanceState?
+
+  @@map("employees")
+}
+
+// Each physical NFC tag / fob.
+// A tag may be unassigned (employeeId null) — these produce UNKNOWN_TAG outcomes.
+model Tag {
+  id         String   @id @default(cuid())
+  // tagId is the normalised form of what the reader reports.
+  // Normalisation: trim, uppercase, collapse internal spaces.
+  tagId      String   @unique
+  employeeId String?
+  label      String?  // e.g. "main card", "backup fob"
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee   Employee?   @relation(fields: [employeeId], references: [id])
+  scanEvents ScanEvent[]
+
+  @@map("tags")
+}
+
+// A physical or virtual scanner endpoint.
+// Each deployed Pi should have its own Device row with an API key.
+model Device {
+  id         String     @id @default(cuid())
+  name       String     @unique  // e.g. "front_door_1"
+  location   String?             // e.g. "Main entrance"
+  type       DeviceType @default(MOCK)
+  isActive   Boolean    @default(true)
+  // bcrypt hash of the device's API key. Null for MANUAL_UI devices
+  // (those use the INTERNAL_API_SECRET env var instead).
+  apiKeyHash String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  scanEvents ScanEvent[]
+
+  @@map("devices")
+}
+
+// Append-only log of every scan attempt, regardless of outcome.
+// Never delete rows from this table — it is the audit trail.
+model ScanEvent {
+  id         String      @id @default(cuid())
+  // tagId as normalised by the backend after receiving the raw value
+  tagId      String
+  // rawTagId is whatever arrived in the payload before normalisation
+  rawTagId   String
+  deviceId   String
+  employeeId String?     // null when outcome is UNKNOWN_TAG or DEVICE_UNAUTHORISED
+  scannedAt  DateTime    // timestamp the scan occurred (caller-provided or now())
+  receivedAt DateTime    @default(now()) // when backend received the request
+  outcome    ScanOutcome
+  rawPayload String?     // optional opaque blob from the Pi (for debugging)
+  createdAt  DateTime    @default(now())
+
+  device   Device    @relation(fields: [deviceId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id])
+  tag      Tag?      @relation(fields: [tagId], references: [tagId])
+
+  @@index([tagId])
+  @@index([employeeId])
+  @@index([deviceId])
+  @@index([scannedAt])
+  @@map("scan_events")
+}
+
+// Materialised current presence state per employee.
+// Updated by the scan ingestion service on every ACCEPTED_IN / ACCEPTED_OUT.
+// Source of truth for the "who is in the office right now" view.
+model AttendanceState {
+  id              String         @id @default(cuid())
+  employeeId      String         @unique
+  status          PresenceStatus @default(OUT)
+  lastScanEventId String?        // which ScanEvent caused this state
+  statusChangedAt DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("attendance_states")
+}

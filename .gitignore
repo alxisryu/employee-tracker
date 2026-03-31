@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment files (never commit real secrets)
+.env
+.env.local
+.env.production
+packages/pi-client/.env
+
+# Prisma
+prisma/*.db
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+dist/
