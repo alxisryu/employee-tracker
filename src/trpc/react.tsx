@@ -15,13 +15,7 @@ function getBaseUrl() {
   return `http://localhost:${process.env.PORT ?? 3000}`;
 }
 
-export function TRPCReactProvider({
-  children,
-  adminSecret,
-}: {
-  children: React.ReactNode;
-  adminSecret?: string;
-}) {
+export function TRPCReactProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -42,13 +36,8 @@ export function TRPCReactProvider({
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
-          headers: () => ({
-            // Pass admin secret for admin procedures.
-            // In production, replace with a proper session token.
-            ...(adminSecret
-              ? { "x-admin-secret": adminSecret }
-              : {}),
-          }),
+          // Auth is now handled via session cookies set by NextAuth.
+          // No custom headers needed.
         }),
       ],
     }),

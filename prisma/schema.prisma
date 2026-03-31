@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,22 +9,25 @@ datasource db {
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-enum DeviceType {
-  MOCK       // CLI mock / test script
-  PI_READER  // Raspberry Pi with hardware NFC reader
-  MANUAL_UI  // Web UI manual simulator
+enum Role {
+  ADMIN
+  EMPLOYEE
 }
 
-// Every scan attempt gets exactly one of these outcomes.
-// This is the canonical audit field — never vague booleans.
+enum DeviceType {
+  MOCK
+  PI_READER
+  MANUAL_UI
+}
+
 enum ScanOutcome {
-  ACCEPTED_IN           // Employee checked in
-  ACCEPTED_OUT          // Employee checked out (toggle)
-  DUPLICATE_IGNORED     // Scan within debounce window — ignored
-  UNKNOWN_TAG           // tagId not in Tag table
-  INACTIVE_TAG          // Tag exists but isActive = false
-  INACTIVE_EMPLOYEE     // Tag resolves to employee but employee isActive = false
-  DEVICE_UNAUTHORISED   // Device not recognised or bad auth
+  ACCEPTED_IN
+  ACCEPTED_OUT
+  DUPLICATE_IGNORED
+  UNKNOWN_TAG
+  INACTIVE_TAG
+  INACTIVE_EMPLOYEE
+  DEVICE_UNAUTHORISED
 }
 
 enum PresenceStatus {
@@ -35,7 +35,69 @@ enum PresenceStatus {
   OUT
 }
 
-// ─── Models ───────────────────────────────────────────────────────────────────
+// ─── Auth models (required by NextAuth PrismaAdapter) ─────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(EMPLOYEE)
+  // Linked employee record. Null until the user first signs in and the
+  // createUser event links or creates their Employee row.
+  employeeId    String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  employee Employee? @relation(fields: [employeeId], references: [id])
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Domain models ────────────────────────────────────────────────────────────
 
 model Employee {
   id        String   @id @default(cuid())
@@ -45,6 +107,9 @@ model Employee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relation back to the User who owns this employee record.
+  // Null if the employee has never signed in (admin-created record).
+  user       User?
   tags       Tag[]
   scanEvents ScanEvent[]
   attendance AttendanceState?
@@ -52,15 +117,11 @@ model Employee {
   @@map("employees")
 }
 
-// Each physical NFC tag / fob.
-// A tag may be unassigned (employeeId null) — these produce UNKNOWN_TAG outcomes.
 model Tag {
   id         String   @id @default(cuid())
-  // tagId is the normalised form of what the reader reports.
-  // Normalisation: trim, uppercase, collapse internal spaces.
   tagId      String   @unique
   employeeId String?
-  label      String?  // e.g. "main card", "backup fob"
+  label      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -71,16 +132,12 @@ model Tag {
   @@map("tags")
 }
 
-// A physical or virtual scanner endpoint.
-// Each deployed Pi should have its own Device row with an API key.
 model Device {
   id         String     @id @default(cuid())
-  name       String     @unique  // e.g. "front_door_1"
-  location   String?             // e.g. "Main entrance"
+  name       String     @unique
+  location   String?
   type       DeviceType @default(MOCK)
   isActive   Boolean    @default(true)
-  // bcrypt hash of the device's API key. Null for MANUAL_UI devices
-  // (those use the INTERNAL_API_SECRET env var instead).
   apiKeyHash String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
@@ -90,20 +147,16 @@ model Device {
   @@map("devices")
 }
 
-// Append-only log of every scan attempt, regardless of outcome.
-// Never delete rows from this table — it is the audit trail.
 model ScanEvent {
   id         String      @id @default(cuid())
-  // tagId as normalised by the backend after receiving the raw value
   tagId      String
-  // rawTagId is whatever arrived in the payload before normalisation
   rawTagId   String
   deviceId   String
-  employeeId String?     // null when outcome is UNKNOWN_TAG or DEVICE_UNAUTHORISED
-  scannedAt  DateTime    // timestamp the scan occurred (caller-provided or now())
-  receivedAt DateTime    @default(now()) // when backend received the request
+  employeeId String?
+  scannedAt  DateTime
+  receivedAt DateTime    @default(now())
   outcome    ScanOutcome
-  rawPayload String?     // optional opaque blob from the Pi (for debugging)
+  rawPayload String?
   createdAt  DateTime    @default(now())
 
   device   Device    @relation(fields: [deviceId], references: [id])
@@ -117,14 +170,11 @@ model ScanEvent {
   @@map("scan_events")
 }
 
-// Materialised current presence state per employee.
-// Updated by the scan ingestion service on every ACCEPTED_IN / ACCEPTED_OUT.
-// Source of truth for the "who is in the office right now" view.
 model AttendanceState {
   id              String         @id @default(cuid())
   employeeId      String         @unique
   status          PresenceStatus @default(OUT)
-  lastScanEventId String?        // which ScanEvent caused this state
+  lastScanEventId String?
   statusChangedAt DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 

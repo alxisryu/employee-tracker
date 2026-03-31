@@ -44,6 +44,14 @@ export const scanRouter = createTRPCRouter({
       });
     }),
 
+  // Delete all scan events recorded via the MANUAL_UI device (simulator).
+  clearManual: adminProcedure.mutation(async ({ ctx }) => {
+    const result = await ctx.db.scanEvent.deleteMany({
+      where: { device: { type: "MANUAL_UI" } },
+    });
+    return { deleted: result.count };
+  }),
+
   // Unknown tag summary — unique unassigned tagIds with counts.
   unknownTags: publicProcedure.query(async ({ ctx }) => {
     // Group by tagId, count occurrences, return first/last seen.

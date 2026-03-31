@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, adminProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure, adminProcedure, employeeProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { normalizeTagId } from "~/server/services/tag-normalizer";
+import { getLastResetTime } from "~/server/services/attendance-reset";
 
 const createEmployeeSchema = z.object({
   name: z.string().min(1).max(100),
@@ -101,6 +102,70 @@ export const employeeRouter = createTRPCRouter({
       return ctx.db.tag.update({
         where: { id: input.tagId },
         data: { employeeId: null },
+      });
+    }),
+
+  // ── Employee self-service ──────────────────────────────────────────────────
+
+  // Returns the signed-in user's own employee profile.
+  getMyProfile: employeeProcedure.query(async ({ ctx }) => {
+    if (!ctx.currentEmployeeId) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No employee profile is linked to your account yet.",
+      });
+    }
+    const employee = await ctx.db.employee.findUniqueOrThrow({
+      where: { id: ctx.currentEmployeeId },
+      include: { tags: true, attendance: true },
+    });
+    // If the attendance state was set before the last 2am reset, treat as OUT.
+    const lastReset = getLastResetTime();
+    if (
+      employee.attendance &&
+      employee.attendance.status === "IN" &&
+      employee.attendance.statusChangedAt < lastReset
+    ) {
+      employee.attendance.status = "OUT";
+    }
+    return employee;
+  }),
+
+  // All ACCEPTED_IN / ACCEPTED_OUT events for the signed-in employee.
+  // Used to render the attendance history calendar and list on the profile page.
+  myAttendanceHistory: employeeProcedure.query(async ({ ctx }) => {
+    if (!ctx.currentEmployeeId) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    return ctx.db.scanEvent.findMany({
+      where: {
+        employeeId: ctx.currentEmployeeId,
+        outcome: { in: ["ACCEPTED_IN", "ACCEPTED_OUT"] },
+      },
+      orderBy: { scannedAt: "desc" },
+      include: {
+        device: { select: { name: true } },
+      },
+    });
+  }),
+
+  // Employees can update their own display name.
+  // Email is managed by Google — we don't let them change it here.
+  updateMyProfile: employeeProcedure
+    .input(z.object({ name: z.string().min(1).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.currentEmployeeId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      // Keep User.name in sync so the nav avatar shows the right name.
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { name: input.name },
+      });
+      return ctx.db.employee.update({
+        where: { id: ctx.currentEmployeeId },
+        data: { name: input.name },
+        include: { tags: true, attendance: true },
       });
     }),
 });

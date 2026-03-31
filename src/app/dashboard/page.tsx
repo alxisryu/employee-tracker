@@ -3,9 +3,10 @@
 import { api } from "~/trpc/react";
 import { Card, CardHeader, EmptyState } from "~/components/ui/Card";
 import { Badge, OutcomeBadge } from "~/components/ui/Badge";
-import { formatDateTime, timeAgo } from "~/lib/format";
+import { timeAgo } from "~/lib/format";
 
 export default function DashboardPage() {
+  const utils = api.useUtils();
   const { data: stats, isLoading: statsLoading } = api.dashboard.stats.useQuery(
     undefined,
     { refetchInterval: 10_000 },
@@ -15,9 +16,29 @@ export default function DashboardPage() {
   const { data: recentScans, isLoading: scansLoading } =
     api.scan.recent.useQuery({ limit: 20 }, { refetchInterval: 10_000 });
 
+  const triggerReset = api.dashboard.triggerReset.useMutation({
+    onSuccess: () => {
+      void utils.dashboard.currentPresence.invalidate();
+      void utils.dashboard.stats.invalidate();
+    },
+  });
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <button
+          onClick={() => {
+            if (confirm("Reset all employees to OUT? This simulates the nightly 2am reset.")) {
+              triggerReset.mutate();
+            }
+          }}
+          disabled={triggerReset.isPending}
+          className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {triggerReset.isPending ? "Resetting…" : "Reset attendance"}
+        </button>
+      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -46,7 +67,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader
             title="Currently in office"
-            subtitle={`Last updated: ${formatDateTime(new Date())}`}
+            subtitle="Auto-refreshes every 10s"
           />
           {presenceLoading ? (
             <p className="text-sm text-gray-400">Loading…</p>

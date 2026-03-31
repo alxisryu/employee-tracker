@@ -27,6 +27,7 @@ export default function SimulatorPage() {
 
   const [tagId, setTagId] = useState("");
   const [deviceId, setDeviceId] = useState("manual_ui");
+  const [scanTime, setScanTime] = useState(""); // empty = use server time (now)
   const [results, setResults] = useState<SimResult[]>([]);
 
   const ingest = api.scan.ingestManual.useMutation({
@@ -56,12 +57,36 @@ export default function SimulatorPage() {
     },
   });
 
+  const clearManual = api.scan.clearManual.useMutation({
+    onSuccess: () => {
+      void utils.scan.recent.invalidate();
+      void utils.scan.unknownTags.invalidate();
+      void utils.dashboard.currentPresence.invalidate();
+      void utils.dashboard.stats.invalidate();
+      setResults([]);
+    },
+  });
+
   const activeDevices = devices?.filter((d) => d.isActive) ?? [];
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!tagId.trim()) return;
-    ingest.mutate({ tagId: tagId.trim(), deviceId });
+    // Convert the local datetime string to an ISO timestamp.
+    // If left blank, omit scannedAt and the backend will default to now.
+    const scannedAt = scanTime ? new Date(scanTime).toISOString() : undefined;
+    ingest.mutate({ tagId: tagId.trim(), deviceId, scannedAt });
+  }
+
+  // Populate the datetime input with the current local time (to the second).
+  function setToNow() {
+    const now = new Date();
+    now.setMilliseconds(0);
+    // datetime-local with step="1" expects "YYYY-MM-DDTHH:MM:SS"
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 19);
+    setScanTime(local);
   }
 
   // Quick-scan buttons for seeded tags.
@@ -72,7 +97,20 @@ export default function SimulatorPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Scan Simulator</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Scan Simulator</h1>
+          <button
+            onClick={() => {
+              if (confirm("Delete all simulator scan events from the database? This cannot be undone.")) {
+                clearManual.mutate();
+              }
+            }}
+            disabled={clearManual.isPending}
+            className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+          >
+            {clearManual.isPending ? "Clearing…" : "Clear data"}
+          </button>
+        </div>
         <p className="mt-1 text-sm text-gray-500">
           Submit fake scan events to test the attendance system without hardware.
           This is the same ingestion path that a real NFC reader would use.
@@ -111,6 +149,30 @@ export default function SimulatorPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-gray-700">
+                  Tap time
+                  <span className="ml-1 font-normal text-gray-400">
+                    — leave blank to use now
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={setToNow}
+                  className="text-xs text-brand-600 hover:underline"
+                >
+                  Set to now
+                </button>
+              </div>
+              <input
+                type="datetime-local"
+                step="1"
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                value={scanTime}
+                onChange={(e) => setScanTime(e.target.value)}
+              />
             </div>
             <button
               type="submit"

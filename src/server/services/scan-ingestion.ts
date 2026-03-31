@@ -21,6 +21,7 @@
 
 import { db } from "~/server/db";
 import { normalizeTagId } from "~/server/services/tag-normalizer";
+import { getLastResetTime } from "~/server/services/attendance-reset";
 import { ScanOutcome, PresenceStatus, type Device } from "@prisma/client";
 
 // Default duplicate suppression window: 30 seconds.
@@ -155,10 +156,16 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
     };
   }
 
-  // ── 4. Duplicate suppression ──────────────────────────────────────────────
-  // Check the most recent scan event for this tag.
+  // ── 4. Compute the last 2am boundary that is ≤ scannedAt ─────────────────
+  // We need the reset boundary relative to the *scan time*, not wall-clock now,
+  // so that backdated simulator scans respect the correct reset epoch.
+  const lastResetTime = getLastResetTime(scannedAt);
+
+  // ── 5. Duplicate suppression (scoped to post-reset events) ────────────────
+  // Only check the most recent scan for this tag that occurred after the last
+  // reset — pre-reset scans are irrelevant to the current attendance cycle.
   const lastScan = await db.scanEvent.findFirst({
-    where: { tagId },
+    where: { tagId, scannedAt: { gte: lastResetTime } },
     orderBy: { scannedAt: "desc" },
   });
 
@@ -186,12 +193,24 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
     }
   }
 
-  // ── 5. Determine attendance transition ────────────────────────────────────
-  let attendance = await db.attendanceState.findUnique({
-    where: { employeeId: employee.id },
+  // ── 6. Determine attendance transition ────────────────────────────────────
+  // Only look at accepted events that are strictly before this scan's timestamp.
+  // This ensures backdated scans toggle correctly regardless of insertion order —
+  // a 4:58 scan submitted after a 4:59 scan sees only events before 4:58.
+  const lastAcceptedEvent = await db.scanEvent.findFirst({
+    where: {
+      employeeId: employee.id,
+      outcome: { in: [ScanOutcome.ACCEPTED_IN, ScanOutcome.ACCEPTED_OUT] },
+      scannedAt: { gte: lastResetTime, lt: scannedAt },
+    },
+    orderBy: { scannedAt: "desc" },
   });
 
-  const currentStatus = attendance?.status ?? PresenceStatus.OUT;
+  const currentStatus =
+    lastAcceptedEvent?.outcome === ScanOutcome.ACCEPTED_IN
+      ? PresenceStatus.IN
+      : PresenceStatus.OUT;
+
   const newStatus =
     currentStatus === PresenceStatus.OUT ? PresenceStatus.IN : PresenceStatus.OUT;
   const outcome =
@@ -199,7 +218,7 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
       ? ScanOutcome.ACCEPTED_IN
       : ScanOutcome.ACCEPTED_OUT;
 
-  // ── 6. Persist — scan event + attendance state (atomic) ───────────────────
+  // ── 7. Persist — scan event + attendance state (atomic) ───────────────────
   const [event] = await db.$transaction(async (tx) => {
     const newEvent = await tx.scanEvent.create({
       data: {
@@ -213,25 +232,38 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
       },
     });
 
-    if (attendance) {
-      await tx.attendanceState.update({
-        where: { employeeId: employee.id },
-        data: {
-          status: newStatus,
-          lastScanEventId: newEvent.id,
-          statusChangedAt: scannedAt,
-        },
-      });
-    } else {
-      await tx.attendanceState.create({
-        data: {
-          employeeId: employee.id,
-          status: newStatus,
-          lastScanEventId: newEvent.id,
-          statusChangedAt: scannedAt,
-        },
-      });
-    }
+    // Re-derive the true live state from the chronologically latest accepted
+    // event (which now includes the one we just inserted). This keeps
+    // AttendanceState correct even when scans arrive out of order — e.g.
+    // inserting a backdated 4:58 IN after a 4:59 OUT leaves the live state OUT.
+    const trueLatest = await tx.scanEvent.findFirst({
+      where: {
+        employeeId: employee.id,
+        outcome: { in: [ScanOutcome.ACCEPTED_IN, ScanOutcome.ACCEPTED_OUT] },
+        scannedAt: { gte: lastResetTime },
+      },
+      orderBy: { scannedAt: "desc" },
+    });
+
+    const liveStatus =
+      trueLatest?.outcome === ScanOutcome.ACCEPTED_IN
+        ? PresenceStatus.IN
+        : PresenceStatus.OUT;
+
+    await tx.attendanceState.upsert({
+      where: { employeeId: employee.id },
+      update: {
+        status: liveStatus,
+        lastScanEventId: trueLatest!.id,
+        statusChangedAt: trueLatest!.scannedAt,
+      },
+      create: {
+        employeeId: employee.id,
+        status: liveStatus,
+        lastScanEventId: trueLatest!.id,
+        statusChangedAt: trueLatest!.scannedAt,
+      },
+    });
 
     return [newEvent];
   });
