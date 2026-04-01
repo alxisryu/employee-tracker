@@ -138,7 +138,6 @@ model Device {
   location   String?
   type       DeviceType @default(IPAD_KIOSK)
   isActive   Boolean    @default(true)
-  apiKeyHash String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 

@@ -1,20 +1,12 @@
 /**
  * Device authentication helpers.
  *
- * Two auth paths:
+ * All devices (IPAD_KIOSK and MANUAL_UI) authenticate using the shared
+ * INTERNAL_API_SECRET environment variable.
  *
- *   MANUAL_UI devices — use INTERNAL_API_SECRET env var (shared secret for
- *   the web UI simulator). No DB key needed.
- *
- *   PI_READER / MOCK devices — carry a bcrypt-hashed API key in Device.apiKeyHash.
- *   The caller presents a plain API key in the Authorization header:
- *     Authorization: Bearer <plain_api_key>
- *
- * This is intentionally simple for MVP. In production you'd rotate keys,
- * add rate limiting, and potentially use mTLS for Pi-to-backend.
+ *   Authorization: Bearer <INTERNAL_API_SECRET>
  */
 
-import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
 import { env } from "~/env/server";
 import type { Device } from "@prisma/client";
@@ -28,7 +20,7 @@ export interface AuthResult {
 /**
  * Authenticate a device by name + bearer token.
  *
- * @param deviceName  Device.name value (e.g. "front_door_1")
+ * @param deviceName  Device.name value (e.g. "ipad_kiosk_1")
  * @param bearerToken Raw value from Authorization: Bearer <token>
  */
 export async function authenticateDevice(
@@ -44,25 +36,11 @@ export async function authenticateDevice(
     return { ok: false, error: `Device '${deviceName}' is inactive.` };
   }
 
-  // MANUAL_UI devices use the internal API secret (shared env var).
-  if (device.type === "MANUAL_UI") {
-    if (bearerToken === env.INTERNAL_API_SECRET) {
-      return { ok: true, device };
-    }
-    return { ok: false, error: "Invalid internal API secret." };
+  if (bearerToken === env.INTERNAL_API_SECRET) {
+    return { ok: true, device };
   }
 
-  // PI_READER and MOCK devices use a per-device hashed key.
-  if (!device.apiKeyHash) {
-    return { ok: false, error: `Device '${deviceName}' has no API key configured.` };
-  }
-
-  const match = await bcrypt.compare(bearerToken, device.apiKeyHash);
-  if (!match) {
-    return { ok: false, error: "Invalid API key." };
-  }
-
-  return { ok: true, device };
+  return { ok: false, error: "Invalid API secret." };
 }
 
 /**

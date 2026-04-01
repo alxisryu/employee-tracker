@@ -31,6 +31,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!api/auth|api/scan|api/trpc|api/cron|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/scan-employee|api/guest-signin|api/trpc|api/cron|_next/static|_next/image|favicon.ico).*)",
   ],
 };

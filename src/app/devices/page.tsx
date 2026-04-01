@@ -29,7 +29,7 @@ export default function DevicesPage() {
         <CardHeader>
           <CardTitle>Registered devices</CardTitle>
           <CardDescription>
-            Each scanner endpoint (Pi, mock CLI, web UI) is a device.
+            iPad kiosks and the web UI simulator are registered here.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,24 +95,6 @@ export default function DevicesPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>API key provisioning</CardTitle>
-          <CardDescription>For Pi / mock CLI devices</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Each kiosk authenticates with a bearer token. API keys are hashed with
-            bcrypt before being stored — the plain key is shown only once during seeding.
-          </p>
-          <p>
-            To provision a new device key, use the seed script or a direct database
-            update, then set the plain key in the kiosk app&apos;s{" "}
-            <code className="rounded bg-muted px-1 font-mono text-foreground">DEVICE_API_KEY</code>{" "}
-            config.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

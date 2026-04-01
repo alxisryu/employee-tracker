@@ -6,7 +6,6 @@
  */
 
 import { PrismaClient, ScanOutcome, DeviceType } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -28,8 +27,7 @@ async function main() {
     },
   });
 
-  // iPad kiosk at the main entrance.
-  const kioskKeyPlain = "ipad-kiosk-dev-key-1234";
+  // iPad kiosk at the main entrance — authenticates via INTERNAL_API_SECRET.
   const kioskDevice = await prisma.device.upsert({
     where: { name: "ipad_kiosk_1" },
     update: {},
@@ -38,13 +36,10 @@ async function main() {
       location: "Main entrance",
       type: DeviceType.IPAD_KIOSK,
       isActive: true,
-      apiKeyHash: await bcrypt.hash(kioskKeyPlain, 10),
     },
   });
 
   console.log("Devices seeded.");
-  console.log(`  ipad_kiosk_1 plain API key: ${kioskKeyPlain}`);
-  console.log("  (Store this in the kiosk app's config — it is shown once only)");
 
   // ── Employees ─────────────────────────────────────────────────────────────
 

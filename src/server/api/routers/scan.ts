@@ -4,8 +4,7 @@ import { ingestScan } from "~/server/services/scan-ingestion";
 import { env } from "~/env/server";
 import { TRPCError } from "@trpc/server";
 
-// Shared input schema — mirrors the REST /api/scan body.
-// The Pi client and the web UI simulator both use this shape.
+// Input schema for the web UI simulator's manual scan ingestion.
 export const scanInputSchema = z.object({
   tagId: z.string().min(1).max(256),
   deviceId: z.string().min(1).max(64),

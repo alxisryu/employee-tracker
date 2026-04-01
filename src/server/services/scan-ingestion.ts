@@ -279,3 +279,70 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
         : `${employee.name} checked out.`,
   };
 }
+
+export interface IngestByEmployeeIdInput {
+  employeeId: string;   // Employee.id (CUID) or email
+  deviceId: string;
+  scannedAt?: string;
+  rawPayload?: string | null;
+  device?: Device;
+}
+
+export async function ingestByEmployeeId(input: IngestByEmployeeIdInput): Promise<IngestScanResult> {
+  const scannedAt = input.scannedAt ? new Date(input.scannedAt) : new Date();
+
+  // Resolve device
+  let device = input.device;
+  if (!device) {
+    const found = await db.device.findUnique({ where: { name: input.deviceId } });
+    if (!found || !found.isActive) {
+      return {
+        outcome: ScanOutcome.DEVICE_UNAUTHORISED,
+        scanEventId: "",
+        message: `Device '${input.deviceId}' not found or inactive.`,
+      };
+    }
+    device = found;
+  }
+
+  // Resolve employee — try by ID first, then by email
+  const employee = await db.employee.findFirst({
+    where: {
+      OR: [
+        { id: input.employeeId },
+        { email: input.employeeId },
+      ],
+    },
+  });
+
+  if (!employee) {
+    return {
+      outcome: ScanOutcome.UNKNOWN_TAG,
+      scanEventId: "",
+      message: "Employee not found.",
+    };
+  }
+
+  // Ensure a virtual "QR Pass" tag exists for this employee.
+  // This gives the scan event a valid tagId FK without schema changes.
+  const virtualTagId = `QR_${employee.id}`;
+  await db.tag.upsert({
+    where: { tagId: virtualTagId },
+    create: {
+      tagId: virtualTagId,
+      label: "QR Pass",
+      isActive: true,
+      employeeId: employee.id,
+    },
+    update: {},
+  });
+
+  // Delegate to ingestScan with the virtual tag — all duplicate/toggle logic reused.
+  return ingestScan({
+    tagId: virtualTagId,
+    deviceId: input.deviceId,
+    scannedAt: input.scannedAt,
+    rawPayload: input.rawPayload,
+    device,
+  });
+}

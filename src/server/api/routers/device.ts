@@ -6,7 +6,6 @@ export const deviceRouter = createTRPCRouter({
   list: publicProcedure.query(({ ctx }) => {
     return ctx.db.device.findMany({
       orderBy: { name: "asc" },
-      // Never expose apiKeyHash to the client.
       select: {
         id: true,
         name: true,
