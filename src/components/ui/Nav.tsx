@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
+import { Separator } from "~/components/ui/separator";
+import { cn } from "~/lib/utils";
 
 const ALL_LINKS = [
   { href: "/dashboard", label: "Dashboard", adminOnly: true },
@@ -21,62 +24,68 @@ export function Nav() {
   const links = ALL_LINKS.filter((l) => isAdmin || !l.adminOnly);
 
   return (
-    <nav className="border-b border-gray-200 bg-white px-6 py-3">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold text-gray-800">EmployeeTracker</span>
-          <div className="flex gap-1">
-            {links.map((link) => (
+    <header className="border-b border-border bg-card">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-6">
+        <span className="text-sm font-semibold tracking-tight">
+          EmployeeTracker
+        </span>
+
+        <Separator orientation="vertical" className="h-5" />
+
+        <nav className="flex items-center gap-1">
+          {links.map((link) => {
+            const active = pathname.startsWith(link.href);
+            return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-                  pathname.startsWith(link.href)
-                    ? "bg-brand-600 text-white"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
               >
                 {link.label}
               </Link>
-            ))}
-          </div>
-        </div>
+            );
+          })}
+        </nav>
 
         {session?.user && (
-          <div className="flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-3">
             <Link
               href="/profile"
-              className="flex items-center gap-2 rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-100"
+              className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-foreground hover:bg-muted"
             >
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
+              <Avatar className="h-7 w-7">
+                <AvatarImage
+                  src={session.user.image ?? undefined}
                   alt={session.user.name ?? ""}
-                  width={28}
-                  height={28}
-                  className="rounded-full"
                 />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
-                  {(session.user.name ?? session.user.email)[0]?.toUpperCase()}
-                </span>
-              )}
-              <span className="hidden sm:block">{session.user.name ?? session.user.email}</span>
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                  {(session.user.name ?? session.user.email ?? "?")[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden sm:block">
+                {session.user.name ?? session.user.email}
+              </span>
               {isAdmin && (
-                <span className="rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-700">
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                   Admin
                 </span>
               )}
             </Link>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
             >
               Sign out
-            </button>
+            </Button>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 }

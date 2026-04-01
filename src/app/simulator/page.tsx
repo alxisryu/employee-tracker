@@ -2,8 +2,25 @@
 
 import { useState } from "react";
 import { api } from "~/trpc/react";
-import { Card, CardHeader, EmptyState } from "~/components/ui/Card";
-import { OutcomeBadge } from "~/components/ui/Badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  EmptyState,
+} from "~/components/ui/card";
+import { OutcomeBadge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { timeAgo } from "~/lib/format";
 import type { ScanOutcome } from "@prisma/client";
 
@@ -27,7 +44,7 @@ export default function SimulatorPage() {
 
   const [tagId, setTagId] = useState("");
   const [deviceId, setDeviceId] = useState("manual_ui");
-  const [scanTime, setScanTime] = useState(""); // empty = use server time (now)
+  const [scanTime, setScanTime] = useState("");
   const [results, setResults] = useState<SimResult[]>([]);
 
   const ingest = api.scan.ingestManual.useMutation({
@@ -72,24 +89,19 @@ export default function SimulatorPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!tagId.trim()) return;
-    // Convert the local datetime string to an ISO timestamp.
-    // If left blank, omit scannedAt and the backend will default to now.
     const scannedAt = scanTime ? new Date(scanTime).toISOString() : undefined;
     ingest.mutate({ tagId: tagId.trim(), deviceId, scannedAt });
   }
 
-  // Populate the datetime input with the current local time (to the second).
   function setToNow() {
     const now = new Date();
     now.setMilliseconds(0);
-    // datetime-local with step="1" expects "YYYY-MM-DDTHH:MM:SS"
     const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
       .toISOString()
       .slice(0, 19);
     setScanTime(local);
   }
 
-  // Quick-scan buttons for seeded tags.
   const quickTags = employees
     ?.flatMap((e) => e.tags.map((t) => ({ ...t, employeeName: e.name })))
     .slice(0, 6);
@@ -98,7 +110,7 @@ export default function SimulatorPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Scan Simulator</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Scan Simulator</h1>
           <button
             onClick={() => {
               if (confirm("Delete all simulator scan events from the database? This cannot be undone.")) {
@@ -106,12 +118,12 @@ export default function SimulatorPage() {
               }
             }}
             disabled={clearManual.isPending}
-            className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+            className="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
           >
             {clearManual.isPending ? "Clearing…" : "Clear data"}
           </button>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Submit fake scan events to test the attendance system without hardware.
           This is the same ingestion path that a real NFC reader would use.
         </p>
@@ -120,207 +132,222 @@ export default function SimulatorPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Scan form */}
         <Card>
-          <CardHeader title="Submit a scan" />
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Tag ID
-              </label>
-              <input
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm focus:border-brand-500 focus:outline-none"
-                value={tagId}
-                onChange={(e) => setTagId(e.target.value)}
-                placeholder="e.g. TAG_ALEXIS_001"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Device
-              </label>
-              <select
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                value={deviceId}
-                onChange={(e) => setDeviceId(e.target.value)}
-              >
-                {activeDevices.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name} ({d.type})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-medium text-gray-700">
-                  Tap time
-                  <span className="ml-1 font-normal text-gray-400">
-                    — leave blank to use now
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  onClick={setToNow}
-                  className="text-xs text-brand-600 hover:underline"
-                >
-                  Set to now
-                </button>
+          <CardHeader>
+            <CardTitle>Submit a scan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="tag-id">Tag ID</Label>
+                <Input
+                  id="tag-id"
+                  className="font-mono"
+                  value={tagId}
+                  onChange={(e) => setTagId(e.target.value)}
+                  placeholder="e.g. TAG_ALEXIS_001"
+                  required
+                />
               </div>
-              <input
-                type="datetime-local"
-                step="1"
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                value={scanTime}
-                onChange={(e) => setScanTime(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={ingest.isPending}
-              className="w-full rounded bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-            >
-              {ingest.isPending ? "Submitting…" : "Submit scan"}
-            </button>
-            {ingest.isError && (
-              <p className="text-xs text-red-600">
-                Error: {ingest.error.message}
-              </p>
-            )}
-          </form>
 
-          {/* Quick-scan buttons */}
-          {quickTags && quickTags.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Quick scan
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {quickTags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => {
-                      setTagId(tag.tagId);
-                    }}
-                    className="rounded border border-gray-200 bg-gray-50 px-3 py-1 text-xs hover:bg-gray-100"
-                  >
-                    {tag.employeeName}
-                  </button>
-                ))}
-                {/* Unknown tag button */}
-                <button
-                  onClick={() => setTagId("TAG_UNKNOWN_X")}
-                  className="rounded border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-700 hover:bg-red-100"
-                >
-                  Unknown tag
-                </button>
+              <div className="space-y-1.5">
+                <Label htmlFor="device-select">Device</Label>
+                <Select value={deviceId} onValueChange={(v) => v && setDeviceId(v)}>
+                  <SelectTrigger id="device-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDevices.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name} ({d.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          )}
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="scan-time">
+                    Tap time{" "}
+                    <span className="font-normal text-muted-foreground">
+                      — leave blank to use now
+                    </span>
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={setToNow}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Set to now
+                  </button>
+                </div>
+                <Input
+                  id="scan-time"
+                  type="datetime-local"
+                  step="1"
+                  value={scanTime}
+                  onChange={(e) => setScanTime(e.target.value)}
+                />
+              </div>
+
+              <Button type="submit" disabled={ingest.isPending} className="w-full">
+                {ingest.isPending ? "Submitting…" : "Submit scan"}
+              </Button>
+
+              {ingest.isError && (
+                <p className="text-xs text-destructive">
+                  Error: {ingest.error.message}
+                </p>
+              )}
+            </form>
+
+            {/* Quick-scan buttons */}
+            {quickTags && quickTags.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Quick scan
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {quickTags.map((tag) => (
+                    <Button
+                      key={tag.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTagId(tag.tagId)}
+                    >
+                      {tag.employeeName}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTagId("TAG_UNKNOWN_X")}
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    Unknown tag
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
         {/* Local result log */}
         <Card>
-          <CardHeader title="Simulation results" subtitle="This session only" />
-          {results.length === 0 ? (
-            <EmptyState message="No scans submitted yet. Try the form on the left." />
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {results.map((r, i) => (
-                <li key={i} className="py-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <OutcomeBadge outcome={r.outcome} />
-                      <p className="mt-1 text-sm text-gray-700">{r.message}</p>
-                      <p className="text-xs text-gray-400">
-                        Event ID: {r.scanEventId.slice(0, 8)}…
-                      </p>
+          <CardHeader>
+            <CardTitle>Simulation results</CardTitle>
+            <CardDescription>This session only</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {results.length === 0 ? (
+              <EmptyState message="No scans submitted yet. Try the form on the left." />
+            ) : (
+              <ul className="divide-y divide-border">
+                {results.map((r, i) => (
+                  <li key={i} className="py-2.5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <OutcomeBadge outcome={r.outcome} />
+                        <p className="mt-1 text-sm">{r.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Event ID: {r.scanEventId.slice(0, 8)}…
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {timeAgo(r.timestamp)}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {timeAgo(r.timestamp)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
         </Card>
       </div>
 
       {/* Recent scans from DB */}
       <Card>
-        <CardHeader title="Recent scan events (live)" />
-        {!recentScans?.length ? (
-          <EmptyState message="No scan events in database." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase text-gray-500">
-                  <th className="pb-2 pr-4">Time</th>
-                  <th className="pb-2 pr-4">Employee</th>
-                  <th className="pb-2 pr-4">Tag</th>
-                  <th className="pb-2 pr-4">Device</th>
-                  <th className="pb-2">Outcome</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentScans.map((event) => (
-                  <tr key={event.id}>
-                    <td className="py-1.5 pr-4 text-xs text-gray-500 whitespace-nowrap">
-                      {timeAgo(event.scannedAt)}
-                    </td>
-                    <td className="py-1.5 pr-4">
-                      {event.employee?.name ?? (
-                        <span className="italic text-gray-400">Unknown</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 pr-4 font-mono text-xs">{event.tagId}</td>
-                    <td className="py-1.5 pr-4 text-xs text-gray-500">
-                      {event.device.name}
-                    </td>
-                    <td className="py-1.5">
-                      <OutcomeBadge outcome={event.outcome} />
-                    </td>
+        <CardHeader>
+          <CardTitle>Recent scan events (live)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!recentScans?.length ? (
+            <EmptyState message="No scan events in database." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
+                    <th className="pb-2 pr-4">Time</th>
+                    <th className="pb-2 pr-4">Employee</th>
+                    <th className="pb-2 pr-4">Tag</th>
+                    <th className="pb-2 pr-4">Device</th>
+                    <th className="pb-2">Outcome</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {recentScans.map((event) => (
+                    <tr key={event.id}>
+                      <td className="py-2 pr-4 text-xs text-muted-foreground whitespace-nowrap">
+                        {timeAgo(event.scannedAt)}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {event.employee?.name ?? (
+                          <span className="italic text-muted-foreground">Unknown</span>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4 font-mono text-xs">{event.tagId}</td>
+                      <td className="py-2 pr-4 text-xs text-muted-foreground">
+                        {event.device.name}
+                      </td>
+                      <td className="py-2">
+                        <OutcomeBadge outcome={event.outcome} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Unknown tags panel */}
       {unknownTags && unknownTags.length > 0 && (
         <Card>
-          <CardHeader
-            title="Unknown tags"
-            subtitle="Tags seen in scans but not yet assigned to any employee."
-          />
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase text-gray-500">
-                  <th className="pb-2 pr-4">Tag ID</th>
-                  <th className="pb-2 pr-4">Seen</th>
-                  <th className="pb-2 pr-4">First seen</th>
-                  <th className="pb-2 pr-4">Last seen</th>
-                  <th className="pb-2">Assign</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {unknownTags.map((tag) => (
-                  <UnknownTagRow
-                    key={tag.tagId}
-                    tag={tag}
-                    employees={employees ?? []}
-                    onAssign={(employeeId) =>
-                      assignTag.mutate({ tagId: tag.tagId, employeeId })
-                    }
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <CardHeader>
+            <CardTitle>Unknown tags</CardTitle>
+            <CardDescription>
+              Tags seen in scans but not yet assigned to any employee.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
+                    <th className="pb-2 pr-4">Tag ID</th>
+                    <th className="pb-2 pr-4">Seen</th>
+                    <th className="pb-2 pr-4">First seen</th>
+                    <th className="pb-2 pr-4">Last seen</th>
+                    <th className="pb-2">Assign</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {unknownTags.map((tag) => (
+                    <UnknownTagRow
+                      key={tag.tagId}
+                      tag={tag}
+                      employees={employees ?? []}
+                      onAssign={(employeeId) =>
+                        assignTag.mutate({ tagId: tag.tagId, employeeId })
+                      }
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>
@@ -340,35 +367,35 @@ function UnknownTagRow({
 
   return (
     <tr>
-      <td className="py-1.5 pr-4 font-mono text-xs">{tag.tagId}</td>
-      <td className="py-1.5 pr-4 text-gray-500">{tag.count}×</td>
-      <td className="py-1.5 pr-4 text-xs text-gray-400">
+      <td className="py-2 pr-4 font-mono text-xs">{tag.tagId}</td>
+      <td className="py-2 pr-4 text-muted-foreground">{tag.count}×</td>
+      <td className="py-2 pr-4 text-xs text-muted-foreground">
         {tag.firstSeen ? timeAgo(tag.firstSeen) : "—"}
       </td>
-      <td className="py-1.5 pr-4 text-xs text-gray-400">
+      <td className="py-2 pr-4 text-xs text-muted-foreground">
         {tag.lastSeen ? timeAgo(tag.lastSeen) : "—"}
       </td>
-      <td className="py-1.5">
+      <td className="py-2">
         <div className="flex items-center gap-2">
-          <select
-            className="rounded border border-gray-300 px-2 py-1 text-xs"
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-          >
-            <option value="">Select employee…</option>
-            {employees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-          </select>
-          <button
+          <Select value={selected} onValueChange={(v) => v && setSelected(v)}>
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue placeholder="Select employee…" />
+            </SelectTrigger>
+            <SelectContent>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
             disabled={!selected}
             onClick={() => onAssign(selected)}
-            className="rounded bg-brand-600 px-2 py-1 text-xs text-white hover:bg-brand-700 disabled:opacity-50"
           >
             Assign
-          </button>
+          </Button>
         </div>
       </td>
     </tr>

@@ -1,8 +1,16 @@
 "use client";
 
 import { api } from "~/trpc/react";
-import { Card, CardHeader, EmptyState } from "~/components/ui/Card";
-import { Badge } from "~/components/ui/Badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  EmptyState,
+} from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import { formatDateTime } from "~/lib/format";
 
 export default function DevicesPage() {
@@ -15,76 +23,84 @@ export default function DevicesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <h1 className="text-2xl font-bold">Devices</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Devices</h1>
 
       <Card>
-        <CardHeader
-          title="Registered devices"
-          subtitle="Each scanner endpoint (Pi, mock CLI, web UI) is a device."
-        />
-        {isLoading ? (
-          <p className="text-sm text-gray-400">Loading…</p>
-        ) : !devices?.length ? (
-          <EmptyState message="No devices registered. Run pnpm db:seed to add sample devices." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase text-gray-500">
-                  <th className="pb-2 pr-4">Name</th>
-                  <th className="pb-2 pr-4">Location</th>
-                  <th className="pb-2 pr-4">Type</th>
-                  <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2 pr-4">Total scans</th>
-                  <th className="pb-2 pr-4">Created</th>
-                  <th className="pb-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {devices.map((device) => (
-                  <tr key={device.id}>
-                    <td className="py-2 pr-4 font-mono font-medium">{device.name}</td>
-                    <td className="py-2 pr-4 text-gray-500">
-                      {device.location ?? "—"}
-                    </td>
-                    <td className="py-2 pr-4">
-                      <DeviceTypeBadge type={device.type} />
-                    </td>
-                    <td className="py-2 pr-4">
-                      <Badge variant={device.isActive ? "green" : "gray"}>
-                        {device.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </td>
-                    <td className="py-2 pr-4 text-gray-500">
-                      {device._count.scanEvents}
-                    </td>
-                    <td className="py-2 pr-4 text-xs text-gray-400">
-                      {formatDateTime(device.createdAt)}
-                    </td>
-                    <td className="py-2">
-                      <button
-                        onClick={() =>
-                          setActive.mutate({
-                            id: device.id,
-                            isActive: !device.isActive,
-                          })
-                        }
-                        className="text-xs text-gray-500 hover:underline"
-                      >
-                        {device.isActive ? "Deactivate" : "Activate"}
-                      </button>
-                    </td>
+        <CardHeader>
+          <CardTitle>Registered devices</CardTitle>
+          <CardDescription>
+            Each scanner endpoint (Pi, mock CLI, web UI) is a device.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !devices?.length ? (
+            <EmptyState message="No devices registered. Run pnpm db:seed to add sample devices." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
+                    <th className="pb-2 pr-4">Name</th>
+                    <th className="pb-2 pr-4">Location</th>
+                    <th className="pb-2 pr-4">Type</th>
+                    <th className="pb-2 pr-4">Status</th>
+                    <th className="pb-2 pr-4">Total scans</th>
+                    <th className="pb-2 pr-4">Created</th>
+                    <th className="pb-2">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {devices.map((device) => (
+                    <tr key={device.id}>
+                      <td className="py-2.5 pr-4 font-mono font-medium">{device.name}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground">
+                        {device.location ?? "—"}
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <DeviceTypeBadge type={device.type} />
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <Badge variant={device.isActive ? "green" : "gray"}>
+                          {device.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 pr-4 text-muted-foreground">
+                        {device._count.scanEvents}
+                      </td>
+                      <td className="py-2.5 pr-4 text-xs text-muted-foreground">
+                        {formatDateTime(device.createdAt)}
+                      </td>
+                      <td className="py-2.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setActive.mutate({
+                              id: device.id,
+                              isActive: !device.isActive,
+                            })
+                          }
+                        >
+                          {device.isActive ? "Deactivate" : "Activate"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       <Card>
-        <CardHeader title="API key provisioning" subtitle="For Pi / mock CLI devices" />
-        <div className="space-y-2 text-sm text-gray-600">
+        <CardHeader>
+          <CardTitle>API key provisioning</CardTitle>
+          <CardDescription>For Pi / mock CLI devices</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
             Each Pi or mock device authenticates with a bearer token. API keys are
             hashed with bcrypt before being stored — the plain key is shown only once
@@ -92,15 +108,15 @@ export default function DevicesPage() {
           </p>
           <p>
             To provision a new device key, use the seed script or a direct database
-            update, then supply the plain key in the Pi client's{" "}
-            <code className="rounded bg-gray-100 px-1 font-mono">DEVICE_API_KEY</code>{" "}
+            update, then supply the plain key in the Pi client&apos;s{" "}
+            <code className="rounded bg-muted px-1 font-mono text-foreground">DEVICE_API_KEY</code>{" "}
             env var.
           </p>
-          <p className="font-medium text-gray-700">
+          <p className="font-medium text-foreground">
             For the seeded mock_cli_1 device, the plain key was printed during{" "}
-            <code className="rounded bg-gray-100 px-1 font-mono">pnpm db:seed</code>.
+            <code className="rounded bg-muted px-1 font-mono">pnpm db:seed</code>.
           </p>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );

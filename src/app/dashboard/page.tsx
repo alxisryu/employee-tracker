@@ -1,8 +1,16 @@
 "use client";
 
 import { api } from "~/trpc/react";
-import { Card, CardHeader, EmptyState } from "~/components/ui/Card";
-import { Badge, OutcomeBadge } from "~/components/ui/Badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  EmptyState,
+} from "~/components/ui/card";
+import { Badge, OutcomeBadge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import { timeAgo } from "~/lib/format";
 
 export default function DashboardPage() {
@@ -26,18 +34,19 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <button
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={triggerReset.isPending}
           onClick={() => {
             if (confirm("Reset all employees to OUT? This simulates the nightly 2am reset.")) {
               triggerReset.mutate();
             }
           }}
-          disabled={triggerReset.isPending}
-          className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
           {triggerReset.isPending ? "Resetting…" : "Reset attendance"}
-        </button>
+        </Button>
       </div>
 
       {/* Stats row */}
@@ -65,79 +74,83 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Current presence */}
         <Card>
-          <CardHeader
-            title="Currently in office"
-            subtitle="Auto-refreshes every 10s"
-          />
-          {presenceLoading ? (
-            <p className="text-sm text-gray-400">Loading…</p>
-          ) : !presence?.length ? (
-            <EmptyState message="Nobody in the office right now." />
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {presence.map((s) => (
-                <li key={s.id} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="text-sm font-medium">{s.employee.name}</p>
-                    <p className="text-xs text-gray-400">{s.employee.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="green">IN</Badge>
-                    <p className="mt-0.5 text-xs text-gray-400">
-                      since {timeAgo(s.statusChangedAt)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <CardHeader>
+            <CardTitle>Currently in office</CardTitle>
+            <CardDescription>Auto-refreshes every 10s</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {presenceLoading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : !presence?.length ? (
+              <EmptyState message="Nobody in the office right now." />
+            ) : (
+              <ul className="divide-y divide-border">
+                {presence.map((s) => (
+                  <li key={s.id} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-sm font-medium">{s.employee.name}</p>
+                      <p className="text-xs text-muted-foreground">{s.employee.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="green">IN</Badge>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        since {timeAgo(s.statusChangedAt)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
         </Card>
 
         {/* Recent scans */}
         <Card>
-          <CardHeader title="Recent scans" />
-          {scansLoading ? (
-            <p className="text-sm text-gray-400">Loading…</p>
-          ) : !recentScans?.length ? (
-            <EmptyState message="No scan events yet." />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase text-gray-500">
-                    <th className="pb-2 pr-4">Time</th>
-                    <th className="pb-2 pr-4">Employee</th>
-                    <th className="pb-2 pr-4">Tag</th>
-                    <th className="pb-2 pr-4">Device</th>
-                    <th className="pb-2">Outcome</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {recentScans.map((event) => (
-                    <tr key={event.id}>
-                      <td className="py-1.5 pr-4 text-xs text-gray-500 whitespace-nowrap">
-                        {timeAgo(event.scannedAt)}
-                      </td>
-                      <td className="py-1.5 pr-4">
-                        {event.employee?.name ?? (
-                          <span className="text-gray-400 italic">Unknown</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 pr-4 font-mono text-xs">
-                        {event.tagId}
-                      </td>
-                      <td className="py-1.5 pr-4 text-xs text-gray-500">
-                        {event.device.name}
-                      </td>
-                      <td className="py-1.5">
-                        <OutcomeBadge outcome={event.outcome} />
-                      </td>
+          <CardHeader>
+            <CardTitle>Recent scans</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {scansLoading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : !recentScans?.length ? (
+              <EmptyState message="No scan events yet." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
+                      <th className="pb-2 pr-4">Time</th>
+                      <th className="pb-2 pr-4">Employee</th>
+                      <th className="pb-2 pr-4">Tag</th>
+                      <th className="pb-2 pr-4">Device</th>
+                      <th className="pb-2">Outcome</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {recentScans.map((event) => (
+                      <tr key={event.id}>
+                        <td className="py-2 pr-4 text-xs text-muted-foreground whitespace-nowrap">
+                          {timeAgo(event.scannedAt)}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {event.employee?.name ?? (
+                            <span className="italic text-muted-foreground">Unknown</span>
+                          )}
+                        </td>
+                        <td className="py-2 pr-4 font-mono text-xs">{event.tagId}</td>
+                        <td className="py-2 pr-4 text-xs text-muted-foreground">
+                          {event.device.name}
+                        </td>
+                        <td className="py-2">
+                          <OutcomeBadge outcome={event.outcome} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>
@@ -154,19 +167,23 @@ function StatCard({
   accent?: "green" | "yellow";
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase text-gray-500">{label}</p>
-      <p
-        className={`mt-1 text-3xl font-bold ${
-          accent === "green"
-            ? "text-green-600"
-            : accent === "yellow"
-              ? "text-yellow-600"
-              : "text-gray-900"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p
+          className={`mt-1 text-3xl font-bold tracking-tight ${
+            accent === "green"
+              ? "text-green-600"
+              : accent === "yellow"
+                ? "text-yellow-600"
+                : "text-foreground"
+          }`}
+        >
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
