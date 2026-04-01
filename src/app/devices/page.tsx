@@ -102,19 +102,14 @@ export default function DevicesPage() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            Each Pi or mock device authenticates with a bearer token. API keys are
-            hashed with bcrypt before being stored — the plain key is shown only once
-            during seeding.
+            Each kiosk authenticates with a bearer token. API keys are hashed with
+            bcrypt before being stored — the plain key is shown only once during seeding.
           </p>
           <p>
             To provision a new device key, use the seed script or a direct database
-            update, then supply the plain key in the Pi client&apos;s{" "}
+            update, then set the plain key in the kiosk app&apos;s{" "}
             <code className="rounded bg-muted px-1 font-mono text-foreground">DEVICE_API_KEY</code>{" "}
-            env var.
-          </p>
-          <p className="font-medium text-foreground">
-            For the seeded mock_cli_1 device, the plain key was printed during{" "}
-            <code className="rounded bg-muted px-1 font-mono">pnpm db:seed</code>.
+            config.
           </p>
         </CardContent>
       </Card>
@@ -124,8 +119,7 @@ export default function DevicesPage() {
 
 function DeviceTypeBadge({ type }: { type: string }) {
   const map: Record<string, { label: string; variant: "blue" | "yellow" | "gray" }> = {
-    PI_READER: { label: "Pi Reader", variant: "blue" },
-    MOCK: { label: "Mock CLI", variant: "yellow" },
+    IPAD_KIOSK: { label: "iPad Kiosk", variant: "blue" },
     MANUAL_UI: { label: "Web UI", variant: "gray" },
   };
   const entry = map[type] ?? { label: type, variant: "gray" as const };

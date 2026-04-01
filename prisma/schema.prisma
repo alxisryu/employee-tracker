@@ -15,8 +15,7 @@ enum Role {
 }
 
 enum DeviceType {
-  MOCK
-  PI_READER
+  IPAD_KIOSK
   MANUAL_UI
 }
 
@@ -136,7 +135,7 @@ model Device {
   id         String     @id @default(cuid())
   name       String     @unique
   location   String?
-  type       DeviceType @default(MOCK)
+  type       DeviceType @default(IPAD_KIOSK)
   isActive   Boolean    @default(true)
   apiKeyHash String?
   createdAt  DateTime   @default(now())

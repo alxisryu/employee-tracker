@@ -1,6 +1,6 @@
 /**
  * Seed script: creates sample employees, tags, devices, and some
- * historical scan events to populate the dashboard for MVP development and testing.
+ * historical scan events to populate the dashboard for development and testing.
  *
  * To run:  pnpm db:seed
  */
@@ -15,8 +15,8 @@ async function main() {
 
   // ── Devices ──────────────────────────────────────────────────────────────
 
-  // The MANUAL_UI device has no API key — it is authenticated via
-  // INTERNAL_API_SECRET env var in the ingestion endpoint.
+  // The MANUAL_UI device has no API key — it is authenticated via the
+  // admin session in the web UI simulator.
   const manualDevice = await prisma.device.upsert({
     where: { name: "manual_ui" },
     update: {},
@@ -28,38 +28,23 @@ async function main() {
     },
   });
 
-  // The mock CLI device used by the pi-client in MOCK_MODE.
-  const mockCliKeyPlain = "mock-cli-dev-key-1234";
-  const mockCliDevice = await prisma.device.upsert({
-    where: { name: "mock_cli_1" },
+  // iPad kiosk at the main entrance.
+  const kioskKeyPlain = "ipad-kiosk-dev-key-1234";
+  const kioskDevice = await prisma.device.upsert({
+    where: { name: "ipad_kiosk_1" },
     update: {},
     create: {
-      name: "mock_cli_1",
-      location: "Dev machine (mock)",
-      type: DeviceType.MOCK,
-      isActive: true,
-      apiKeyHash: await bcrypt.hash(mockCliKeyPlain, 10),
-    },
-  });
-
-  // A placeholder for the future physical Pi at the front door.
-  const frontDoorKeyPlain = "front-door-dev-key-5678";
-  const frontDoorDevice = await prisma.device.upsert({
-    where: { name: "front_door_1" },
-    update: {},
-    create: {
-      name: "front_door_1",
+      name: "ipad_kiosk_1",
       location: "Main entrance",
-      type: DeviceType.PI_READER,
+      type: DeviceType.IPAD_KIOSK,
       isActive: true,
-      apiKeyHash: await bcrypt.hash(frontDoorKeyPlain, 10),
+      apiKeyHash: await bcrypt.hash(kioskKeyPlain, 10),
     },
   });
 
   console.log("Devices seeded.");
-  console.log(`  mock_cli_1   plain API key: ${mockCliKeyPlain}`);
-  console.log(`  front_door_1 plain API key: ${frontDoorKeyPlain}`);
-  console.log("  (Store these in your .env for the pi-client — they are shown once only)");
+  console.log(`  ipad_kiosk_1 plain API key: ${kioskKeyPlain}`);
+  console.log("  (Store this in the kiosk app's config — it is shown once only)");
 
   // ── Employees ─────────────────────────────────────────────────────────────
 
@@ -83,51 +68,41 @@ async function main() {
 
   console.log("Employees seeded.");
 
-  // ── Tags ─────────────────────────────────────────────────────────────────
+  // ── Tags (QR code identifiers) ────────────────────────────────────────────
 
-  // Tags are stored in their normalised form (uppercase, trimmed).
+  // Each tag represents the QR credential for one employee.
+  // The tagId will eventually be a TOTP-derived value; for seeding we use
+  // a static placeholder so the simulator and history events work out of the box.
   await prisma.tag.upsert({
-    where: { tagId: "TAG_ALEXIS_001" },
+    where: { tagId: "QR_ALEXIS_001" },
     update: {},
     create: {
-      tagId: "TAG_ALEXIS_001",
-      label: "Main card",
+      tagId: "QR_ALEXIS_001",
+      label: "Wallet pass",
       isActive: true,
       employeeId: alexis.id,
     },
   });
 
   await prisma.tag.upsert({
-    where: { tagId: "TAG_SAM_001" },
+    where: { tagId: "QR_SAM_001" },
     update: {},
     create: {
-      tagId: "TAG_SAM_001",
-      label: "Main card",
+      tagId: "QR_SAM_001",
+      label: "Wallet pass",
       isActive: true,
       employeeId: sam.id,
     },
   });
 
   await prisma.tag.upsert({
-    where: { tagId: "TAG_JORDAN_001" },
+    where: { tagId: "QR_JORDAN_001" },
     update: {},
     create: {
-      tagId: "TAG_JORDAN_001",
-      label: "Main card",
+      tagId: "QR_JORDAN_001",
+      label: "Wallet pass",
       isActive: true,
       employeeId: jordan.id,
-    },
-  });
-
-  // An unassigned tag — will produce UNKNOWN_TAG outcomes until assigned.
-  await prisma.tag.upsert({
-    where: { tagId: "TAG_UNKNOWN_X" },
-    update: {},
-    create: {
-      tagId: "TAG_UNKNOWN_X",
-      label: null,
-      isActive: true,
-      employeeId: null,
     },
   });
 
@@ -148,53 +123,48 @@ async function main() {
 
   // ── Historical scan events ────────────────────────────────────────────────
 
-  // These are synthetic past events so the "recent scans" table is not empty.
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const makeTime = (hoursAgo: number) =>
     new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
 
   const historicalEvents = [
-    // Alexis arrived yesterday morning
     {
-      tagId: "TAG_ALEXIS_001",
-      rawTagId: "TAG_ALEXIS_001",
-      deviceId: frontDoorDevice.id,
+      tagId: "QR_ALEXIS_001",
+      rawTagId: "QR_ALEXIS_001",
+      deviceId: kioskDevice.id,
       employeeId: alexis.id,
       scannedAt: new Date(yesterday.setHours(9, 0, 0, 0)),
       outcome: ScanOutcome.ACCEPTED_IN,
     },
-    // Alexis left yesterday afternoon
     {
-      tagId: "TAG_ALEXIS_001",
-      rawTagId: "TAG_ALEXIS_001",
-      deviceId: frontDoorDevice.id,
+      tagId: "QR_ALEXIS_001",
+      rawTagId: "QR_ALEXIS_001",
+      deviceId: kioskDevice.id,
       employeeId: alexis.id,
       scannedAt: new Date(yesterday.setHours(17, 30, 0, 0)),
       outcome: ScanOutcome.ACCEPTED_OUT,
     },
-    // Sam arrived yesterday
     {
-      tagId: "TAG_SAM_001",
-      rawTagId: "TAG_SAM_001",
-      deviceId: frontDoorDevice.id,
+      tagId: "QR_SAM_001",
+      rawTagId: "QR_SAM_001",
+      deviceId: kioskDevice.id,
       employeeId: sam.id,
       scannedAt: new Date(yesterday.setHours(9, 15, 0, 0)),
       outcome: ScanOutcome.ACCEPTED_IN,
     },
-    // Sam duplicate within cooldown (ignored)
     {
-      tagId: "TAG_SAM_001",
-      rawTagId: "TAG_SAM_001",
-      deviceId: frontDoorDevice.id,
+      tagId: "QR_SAM_001",
+      rawTagId: "QR_SAM_001",
+      deviceId: kioskDevice.id,
       employeeId: sam.id,
       scannedAt: new Date(yesterday.setHours(9, 15, 10, 0)),
       outcome: ScanOutcome.DUPLICATE_IGNORED,
     },
-    // Unknown tag seen recently
+    // An unrecognised QR seen recently
     {
-      tagId: "TAG_UNKNOWN_X",
-      rawTagId: "tag_unknown_x", // intentionally un-normalised to show normalisation works
-      deviceId: mockCliDevice.id,
+      tagId: "QR_UNKNOWN_X",
+      rawTagId: "QR_UNKNOWN_X",
+      deviceId: manualDevice.id,
       employeeId: null,
       scannedAt: makeTime(3),
       outcome: ScanOutcome.UNKNOWN_TAG,
