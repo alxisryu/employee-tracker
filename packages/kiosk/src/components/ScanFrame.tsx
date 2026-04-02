@@ -29,18 +29,19 @@ export function ScanFrame({ children, size, active = true }: ScanFrameProps) {
 
   useEffect(() => {
     if (active) {
+      const sineInOut = Easing.bezier(0.45, 0, 0.55, 1);
       glowOpacity.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sine) }),
-          withTiming(0.4, { duration: 1400, easing: Easing.inOut(Easing.sine) }),
+          withTiming(1, { duration: 1400, easing: sineInOut }),
+          withTiming(0.4, { duration: 1400, easing: sineInOut }),
         ),
         -1,
         false,
       );
       cornerOpacity.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sine) }),
-          withTiming(0.55, { duration: 1800, easing: Easing.inOut(Easing.sine) }),
+          withTiming(1, { duration: 1800, easing: sineInOut }),
+          withTiming(0.55, { duration: 1800, easing: sineInOut }),
         ),
         -1,
         false,

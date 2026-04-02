@@ -27,7 +27,7 @@ export function IdleScreen({ dispatch }: IdleScreenProps) {
 
   useEffect(() => {
     titleOpacity.value = withTiming(1, { duration: 500 });
-    titleTranslate.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.cubic) });
+    titleTranslate.value = withTiming(0, { duration: 500, easing: Easing.bezier(0.33, 1, 0.68, 1) });
     subtitleOpacity.value = withTiming(1, { duration: 700 });
     actionsOpacity.value = withTiming(1, { duration: 900 });
   }, []);

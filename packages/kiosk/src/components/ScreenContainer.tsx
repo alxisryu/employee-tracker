@@ -28,10 +28,10 @@ export function ScreenContainer({ children, safe = true, style, ...props }: Scre
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: 'transparent',
   },
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: 'transparent',
   },
 });

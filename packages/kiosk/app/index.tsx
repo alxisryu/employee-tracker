@@ -1,6 +1,6 @@
 import React, { useReducer, useCallback, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { colors } from '@/src/theme';
+import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { kioskReducer, initialKioskState, KioskAction } from '@/src/state/kiosk-machine';
 import { IdleScreen } from '@/src/screens/IdleScreen';
 import { ProcessingScreen } from '@/src/screens/ProcessingScreen';
@@ -47,15 +47,20 @@ export default function KioskApp() {
   };
 
   return (
-    <View style={styles.root}>
+    <LinearGradient
+      colors={['#9B5DE5', '#7B61FF', '#4361EE']}
+      locations={[0, 0.45, 1]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.root}
+    >
       {renderScreen()}
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
 });
