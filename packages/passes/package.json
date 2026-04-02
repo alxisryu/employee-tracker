@@ -1,0 +1,17 @@
+{
+  "name": "@employee-tracker/passes",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.15.1",
+    "passkit-generator": "^3.4.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.5.3"
+  }
+}
