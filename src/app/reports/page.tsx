@@ -118,26 +118,12 @@ export default function ReportsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Attendance Report
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            SOC2 compliance — full audit trail of employee sign-ins and sign-outs.
-          </p>
-        </div>
-        {data && submittedRange && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              exportCsv(data, submittedRange.fromStr, submittedRange.toStr)
-            }
-          >
-            Export CSV
-          </Button>
-        )}
+      {/* Page header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Attendance Report</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          SOC2 compliance — full audit trail of employee sign-ins and sign-outs.
+        </p>
       </div>
 
       {/* Date range controls */}
@@ -167,14 +153,26 @@ export default function ReportsPage() {
                 className="w-40"
               />
             </div>
-            <Button onClick={handleGenerate} disabled={isFetching}>
-              {isFetching ? "Generating…" : "Generate report"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleGenerate} disabled={isFetching}>
+                {isFetching ? "Generating…" : "Generate report"}
+              </Button>
+              {data && submittedRange && (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    exportCsv(data, submittedRange.fromStr, submittedRange.toStr)
+                  }
+                >
+                  Export CSV
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Results */}
+      {/* Error */}
       {isError && (
         <p className="text-sm text-destructive">
           Failed to load report. Please try again.
@@ -184,7 +182,7 @@ export default function ReportsPage() {
       {data && (
         <>
           {/* Summary stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-4">
             <StatCard
               label="Employees with activity"
               value={String(data.employees.length)}
@@ -196,7 +194,6 @@ export default function ReportsPage() {
             <StatCard
               label="Report generated"
               value={formatDateTime(data.generatedAt)}
-              small
             />
           </div>
 
@@ -211,12 +208,12 @@ export default function ReportsPage() {
             <div className="space-y-4">
               {data.employees.map((emp) => (
                 <Card key={emp.employeeId}>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>{emp.name}</CardTitle>
+                        <CardTitle className="text-base">{emp.name}</CardTitle>
                         {emp.email && (
-                          <CardDescription>{emp.email}</CardDescription>
+                          <CardDescription className="mt-0.5">{emp.email}</CardDescription>
                         )}
                       </div>
                       <Badge variant="gray">
@@ -224,48 +221,48 @@ export default function ReportsPage() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                      <table className="w-full table-fixed text-sm">
                         <thead>
-                          <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
-                            <th className="pb-2 pr-6">Date</th>
-                            <th className="pb-2 pr-6">First Sign-In</th>
-                            <th className="pb-2 pr-6">Last Sign-Out</th>
-                            <th className="pb-2 pr-6">Duration</th>
-                            <th className="pb-2">Scans</th>
+                          <tr className="border-b border-border">
+                            <th className="w-[14%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Date</th>
+                            <th className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">First Sign-In</th>
+                            <th className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Sign-Out</th>
+                            <th className="w-[18%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Duration</th>
+                            <th className="w-[16%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Scans</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
                           {emp.days.map((day) => (
-                            <tr key={day.date}>
-                              <td className="py-2.5 pr-6 font-mono text-xs">
+                            <tr key={day.date} className="hover:bg-muted/40 transition-colors">
+                              <td className="py-2.5 text-center font-mono text-xs text-foreground tabular-nums">
                                 {day.date}
                               </td>
-                              <td className="py-2.5 pr-6">
+                              <td className="py-2.5 text-center tabular-nums">
                                 {day.firstIn ? (
-                                  <span className="font-medium text-green-700">
+                                  <span className="text-emerald-600 dark:text-emerald-400">
                                     {formatDateTime(day.firstIn)}
                                   </span>
                                 ) : (
                                   <span className="text-muted-foreground">—</span>
                                 )}
                               </td>
-                              <td className="py-2.5 pr-6">
+                              <td className="py-2.5 text-center tabular-nums">
                                 {day.lastOut ? (
-                                  <span className="font-medium text-blue-700">
+                                  <span className="text-sky-600 dark:text-sky-400">
                                     {formatDateTime(day.lastOut)}
                                   </span>
                                 ) : (
                                   <span className="text-muted-foreground">—</span>
                                 )}
                               </td>
-                              <td className="py-2.5 pr-6 text-muted-foreground">
+                              <td className="py-2.5 text-center tabular-nums text-muted-foreground">
                                 {day.firstIn && day.lastOut
                                   ? formatDuration(day.firstIn, day.lastOut)
                                   : "—"}
                               </td>
-                              <td className="py-2.5">
+                              <td className="py-2.5 text-center">
                                 <Badge variant="gray">{day.totalScans}</Badge>
                               </td>
                             </tr>
@@ -292,24 +289,14 @@ export default function ReportsPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  small,
-}: {
-  label: string;
-  value: string;
-  small?: boolean;
-}) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-5 pb-5">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
-        <p
-          className={`mt-1 font-bold tracking-tight text-foreground ${small ? "text-base" : "text-3xl"}`}
-        >
+        <p className="mt-2 text-xl font-bold tracking-tight text-foreground">
           {value}
         </p>
       </CardContent>
