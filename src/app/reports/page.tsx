@@ -26,7 +26,6 @@ function toLocalDateString(date: Date): string {
 }
 
 function parseDateInput(value: string): Date {
-  // Parse YYYY-MM-DD as local midnight.
   const [y, m, d] = value.split("-").map(Number);
   return new Date(y!, m! - 1, d!);
 }
@@ -117,7 +116,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <main className="mx-auto max-w-7xl space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Attendance Report</h1>
@@ -129,163 +128,188 @@ export default function ReportsPage() {
       {/* Date range controls */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="from">From</Label>
-              <Input
-                id="from"
-                type="date"
-                value={fromInput}
-                max={toInput}
-                onChange={(e) => setFromInput(e.target.value)}
-                className="w-40"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="to">To</Label>
-              <Input
-                id="to"
-                type="date"
-                value={toInput}
-                min={fromInput}
-                max={today}
-                onChange={(e) => setToInput(e.target.value)}
-                className="w-40"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleGenerate} disabled={isFetching}>
-                {isFetching ? "Generating…" : "Generate report"}
-              </Button>
-              {data && submittedRange && (
+          <fieldset>
+            <legend className="sr-only">Report date range</legend>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="from">From</Label>
+                <Input
+                  id="from"
+                  type="date"
+                  value={fromInput}
+                  max={toInput}
+                  aria-label="Report start date"
+                  onChange={(e) => setFromInput(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="to">To</Label>
+                <Input
+                  id="to"
+                  type="date"
+                  value={toInput}
+                  min={fromInput}
+                  max={today}
+                  aria-label="Report end date"
+                  onChange={(e) => setToInput(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
-                  onClick={() =>
-                    exportCsv(data, submittedRange.fromStr, submittedRange.toStr)
-                  }
+                  onClick={handleGenerate}
+                  disabled={isFetching}
+                  aria-busy={isFetching}
                 >
-                  Export CSV
+                  {isFetching ? "Generating…" : "Generate report"}
                 </Button>
-              )}
+                {data && submittedRange && (
+                  <Button
+                    variant="outline"
+                    aria-label={`Export attendance report from ${submittedRange.fromStr} to ${submittedRange.toStr} as CSV`}
+                    onClick={() =>
+                      exportCsv(data, submittedRange.fromStr, submittedRange.toStr)
+                    }
+                  >
+                    Export CSV
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          </fieldset>
         </CardContent>
       </Card>
 
-      {/* Error */}
-      {isError && (
-        <p className="text-sm text-destructive">
-          Failed to load report. Please try again.
-        </p>
-      )}
+      {/* Live region for results */}
+      <div aria-live="polite" aria-atomic="false">
+        {isError && (
+          <p role="alert" className="text-sm text-destructive">
+            Failed to load report. Please try again.
+          </p>
+        )}
 
-      {data && (
-        <>
-          {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <StatCard
-              label="Employees with activity"
-              value={String(data.employees.length)}
-            />
-            <StatCard
-              label="Total accepted scans"
-              value={String(data.totalEvents)}
-            />
-            <StatCard
-              label="Report generated"
-              value={formatDateTime(data.generatedAt)}
-            />
-          </div>
+        {data && (
+          <div className="space-y-6">
+            {/* Summary stats */}
+            <section aria-label="Report summary">
+              <div className="grid grid-cols-3 gap-4">
+                <StatCard
+                  label="Employees with activity"
+                  value={String(data.employees.length)}
+                />
+                <StatCard
+                  label="Total accepted scans"
+                  value={String(data.totalEvents)}
+                />
+                <StatCard
+                  label="Report generated"
+                  value={formatDateTime(data.generatedAt)}
+                />
+              </div>
+            </section>
 
-          {/* Per-employee breakdown */}
-          {data.employees.length === 0 ? (
-            <Card>
-              <CardContent>
-                <EmptyState message="No attendance events found for the selected date range." />
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {data.employees.map((emp) => (
-                <Card key={emp.employeeId}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base">{emp.name}</CardTitle>
-                        {emp.email && (
-                          <CardDescription className="mt-0.5">{emp.email}</CardDescription>
-                        )}
-                      </div>
-                      <Badge variant="gray">
-                        {emp.totalScans} scan{emp.totalScans !== 1 ? "s" : ""}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="overflow-x-auto">
-                      <table className="w-full table-fixed text-sm">
-                        <thead>
-                          <tr className="border-b border-border">
-                            <th className="w-[14%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Date</th>
-                            <th className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">First Sign-In</th>
-                            <th className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Sign-Out</th>
-                            <th className="w-[18%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Duration</th>
-                            <th className="w-[16%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Scans</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {emp.days.map((day) => (
-                            <tr key={day.date} className="hover:bg-muted/40 transition-colors">
-                              <td className="py-2.5 text-center font-mono text-xs text-foreground tabular-nums">
-                                {day.date}
-                              </td>
-                              <td className="py-2.5 text-center tabular-nums">
-                                {day.firstIn ? (
-                                  <span className="text-emerald-600 dark:text-emerald-400">
-                                    {formatDateTime(day.firstIn)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="py-2.5 text-center tabular-nums">
-                                {day.lastOut ? (
-                                  <span className="text-sky-600 dark:text-sky-400">
-                                    {formatDateTime(day.lastOut)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="py-2.5 text-center tabular-nums text-muted-foreground">
-                                {day.firstIn && day.lastOut
-                                  ? formatDuration(day.firstIn, day.lastOut)
-                                  : "—"}
-                              </td>
-                              <td className="py-2.5 text-center">
-                                <Badge variant="gray">{day.totalScans}</Badge>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+            {/* Per-employee breakdown */}
+            <section aria-label="Attendance breakdown by employee">
+              {data.employees.length === 0 ? (
+                <Card>
+                  <CardContent>
+                    <EmptyState message="No attendance events found for the selected date range." />
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+              ) : (
+                <div className="space-y-4">
+                  {data.employees.map((emp) => (
+                    <Card key={emp.employeeId}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base">{emp.name}</CardTitle>
+                            {emp.email && (
+                              <CardDescription className="mt-0.5">{emp.email}</CardDescription>
+                            )}
+                          </div>
+                          <Badge variant="gray" aria-label={`${emp.totalScans} total scan${emp.totalScans !== 1 ? "s" : ""}`}>
+                            {emp.totalScans} scan{emp.totalScans !== 1 ? "s" : ""}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="overflow-x-auto">
+                          <table
+                            className="w-full table-fixed text-sm"
+                            aria-label={`Attendance records for ${emp.name}`}
+                          >
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th scope="col" className="w-[14%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Date</th>
+                                <th scope="col" className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">First Sign-In</th>
+                                <th scope="col" className="w-[26%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Sign-Out</th>
+                                <th scope="col" className="w-[18%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Duration</th>
+                                <th scope="col" className="w-[16%] pb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Scans</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {emp.days.map((day) => (
+                                <tr key={day.date} className="hover:bg-muted/40 transition-colors">
+                                  <td className="py-2.5 text-center font-mono text-xs text-foreground tabular-nums">
+                                    <time dateTime={day.date}>{day.date}</time>
+                                  </td>
+                                  <td className="py-2.5 text-center tabular-nums">
+                                    {day.firstIn ? (
+                                      <span className="text-emerald-600 dark:text-emerald-400">
+                                        <time dateTime={day.firstIn.toISOString()}>
+                                          {formatDateTime(day.firstIn)}
+                                        </time>
+                                      </span>
+                                    ) : (
+                                      <span aria-label="No sign-in recorded" aria-hidden="false" className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 text-center tabular-nums">
+                                    {day.lastOut ? (
+                                      <span className="text-sky-600 dark:text-sky-400">
+                                        <time dateTime={day.lastOut.toISOString()}>
+                                          {formatDateTime(day.lastOut)}
+                                        </time>
+                                      </span>
+                                    ) : (
+                                      <span aria-label="No sign-out recorded" className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 text-center tabular-nums text-muted-foreground">
+                                    {day.firstIn && day.lastOut
+                                      ? formatDuration(day.firstIn, day.lastOut)
+                                      : <span aria-label="Duration not available">—</span>}
+                                  </td>
+                                  <td className="py-2.5 text-center">
+                                    <Badge variant="gray" aria-label={`${day.totalScans} scan${day.totalScans !== 1 ? "s" : ""}`}>
+                                      {day.totalScans}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
 
-      {!data && !isFetching && (
-        <Card>
-          <CardContent>
-            <EmptyState message="Select a date range and click Generate report." />
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {!data && !isFetching && (
+          <Card>
+            <CardContent>
+              <EmptyState message="Select a date range and click Generate report." />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </main>
   );
 }
 
