@@ -55,12 +55,12 @@ export function Nav() {
         </nav>
 
         {session?.user && (
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <Link
               href="/profile"
-              className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-foreground hover:bg-muted"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted"
             >
-              <Avatar className="h-7 w-7">
+              <Avatar className="h-7 w-7 shrink-0">
                 <AvatarImage
                   src={session.user.image ?? undefined}
                   alt={session.user.name ?? ""}
@@ -69,14 +69,14 @@ export function Nav() {
                   {(session.user.name ?? session.user.email ?? "?")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:block">
-                {session.user.name ?? session.user.email}
-              </span>
-              {isAdmin && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  Admin
-                </span>
-              )}
+              <div className="hidden items-baseline gap-1.5 sm:flex">
+                <span>{session.user.name ?? session.user.email}</span>
+                {isAdmin && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    Admin
+                  </span>
+                )}
+              </div>
             </Link>
             <Button
               variant="outline"

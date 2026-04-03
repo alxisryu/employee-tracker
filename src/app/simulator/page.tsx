@@ -107,7 +107,7 @@ export default function SimulatorPage() {
     .slice(0, 6);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-6">
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">Scan Simulator</h1>

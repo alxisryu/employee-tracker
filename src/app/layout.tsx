@@ -14,12 +14,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await auth();
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen overflow-y-scroll bg-background text-foreground antialiased">
         <Providers session={session}>
           <TRPCReactProvider>
             <div className="flex min-h-screen flex-col">
               <Nav />
-              <main className="flex-1 p-6">{children}</main>
+              <main className="flex-1 py-6">{children}</main>
             </div>
           </TRPCReactProvider>
         </Providers>
