@@ -116,7 +116,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Attendance Report</h1>
@@ -309,7 +309,7 @@ export default function ReportsPage() {
           </Card>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

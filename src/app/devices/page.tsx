@@ -22,7 +22,7 @@ export default function DevicesPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-6">
       <h1 className="text-2xl font-bold tracking-tight">Devices</h1>
 
       <Card>
