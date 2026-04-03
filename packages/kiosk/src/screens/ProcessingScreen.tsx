@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/src/components/ScreenContainer';
+import { NeuCard } from '@/src/components/NeuCard';
 import { colors, typography } from '@/src/theme';
 import { submitEmployeeScan, submitGuestSignIn, ApiError } from '@/src/services/api';
 import type { KioskState, KioskAction, ErrorType } from '@/src/state/kiosk-machine';
@@ -66,11 +67,11 @@ export function ProcessingScreen({ state, dispatch, onComplete }: ProcessingScre
   return (
     <ScreenContainer>
       <View style={styles.root}>
-        <View style={styles.card}>
+        <NeuCard style={styles.card} radius={28}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={[typography.heading, styles.label]}>Processing…</Text>
           <Text style={[typography.body, styles.sub]}>Just a moment</Text>
-        </View>
+        </NeuCard>
       </View>
     </ScreenContainer>
   );
@@ -83,10 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 28,
     padding: 52,
     alignItems: 'center',
     gap: 20,

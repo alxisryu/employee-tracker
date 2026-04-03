@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+
 import { colors } from '@/src/theme';
 
 const CORNER_SIZE = 28;
@@ -18,26 +19,18 @@ interface ScanFrameProps {
   children?: React.ReactNode;
   size?: number;
   active?: boolean;
+  borderRadius?: number;
 }
 
-export function ScanFrame({ children, size, active = true }: ScanFrameProps) {
+export function ScanFrame({ children, size, active = true, borderRadius = FRAME_RADIUS }: ScanFrameProps) {
   const { width } = Dimensions.get('window');
   const frameSize = size ?? Math.min(width * 0.42, 420);
 
-  const glowOpacity = useSharedValue(0.4);
   const cornerOpacity = useSharedValue(0.7);
 
   useEffect(() => {
     if (active) {
       const sineInOut = Easing.bezier(0.45, 0, 0.55, 1);
-      glowOpacity.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1400, easing: sineInOut }),
-          withTiming(0.4, { duration: 1400, easing: sineInOut }),
-        ),
-        -1,
-        false,
-      );
       cornerOpacity.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 1800, easing: sineInOut }),
@@ -47,25 +40,14 @@ export function ScanFrame({ children, size, active = true }: ScanFrameProps) {
         false,
       );
     } else {
-      glowOpacity.value = withTiming(0.2);
       cornerOpacity.value = withTiming(0.3);
     }
-  }, [active, glowOpacity, cornerOpacity]);
+  }, [active, cornerOpacity]);
 
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glowOpacity.value }));
   const cornerStyle = useAnimatedStyle(() => ({ opacity: cornerOpacity.value }));
 
   return (
     <View style={[styles.wrapper, { width: frameSize, height: frameSize }]}>
-      {/* Glow behind the frame */}
-      <Animated.View
-        style={[
-          styles.glow,
-          { borderRadius: FRAME_RADIUS + 8, width: frameSize + 16, height: frameSize + 16, left: -8, top: -8 },
-          glowStyle,
-        ]}
-      />
-
       {/* Animated corner brackets */}
       <Animated.View style={cornerStyle}>
         {/* Top-left */}
@@ -91,7 +73,7 @@ export function ScanFrame({ children, size, active = true }: ScanFrameProps) {
       </Animated.View>
 
       {/* Camera content */}
-      <View style={[styles.inner, { borderRadius: FRAME_RADIUS }]}>
+      <View style={[styles.inner, { borderRadius }]}>
         {children}
       </View>
     </View>
@@ -104,10 +86,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glow: {
-    position: 'absolute',
-    backgroundColor: colors.scanFrameGlow,
-  },
   inner: {
     position: 'absolute',
     top: 0,
@@ -116,6 +94,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     overflow: 'hidden',
     backgroundColor: '#000',
+    zIndex: 1,
   },
   corner: {
     position: 'absolute',

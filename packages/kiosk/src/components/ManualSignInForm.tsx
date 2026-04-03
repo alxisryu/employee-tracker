@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { KioskButton } from './KioskButton';
 import { colors, typography } from '@/src/theme';
+import { FONT } from '@/src/theme/typography';
 
 const schema = z.object({
   identifier: z
@@ -98,6 +99,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
     fontSize: 20,
+    fontFamily: FONT,
     color: colors.inputText,
   },
   inputError: {
