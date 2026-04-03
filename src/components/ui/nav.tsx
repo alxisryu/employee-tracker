@@ -14,6 +14,7 @@ const ALL_LINKS = [
   { href: "/devices", label: "Devices", adminOnly: true },
   { href: "/reports", label: "Reports", adminOnly: true },
   { href: "/simulator", label: "Simulator", adminOnly: true },
+  { href: "/admin", label: "Admin", adminOnly: true },
   { href: "/profile", label: "My Profile", adminOnly: false },
 ];
 
