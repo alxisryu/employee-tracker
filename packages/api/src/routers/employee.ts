@@ -28,6 +28,7 @@ export const employeeRouter = createTRPCRouter({
       include: {
         tags: true,
         attendance: true,
+        user: { select: { id: true } },
       },
     });
   }),
@@ -54,6 +55,33 @@ export const employeeRouter = createTRPCRouter({
         },
         include: { attendance: true },
       });
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Preserve historical scan events and tags — just unlink them.
+      // Unlink the User account so they aren't orphaned.
+      await ctx.db.$transaction([
+        ctx.db.user.updateMany({
+          where: { employeeId: input.id },
+          data: { employeeId: null },
+        }),
+        ctx.db.tag.updateMany({
+          where: { employeeId: input.id },
+          data: { employeeId: null },
+        }),
+        ctx.db.scanEvent.updateMany({
+          where: { employeeId: input.id },
+          data: { employeeId: null },
+        }),
+        ctx.db.attendanceState.deleteMany({
+          where: { employeeId: input.id },
+        }),
+        ctx.db.employee.delete({
+          where: { id: input.id },
+        }),
+      ]);
     }),
 
   update: adminProcedure

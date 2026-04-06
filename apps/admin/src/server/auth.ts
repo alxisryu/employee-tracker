@@ -29,9 +29,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    signIn({ account, profile }) {
+    // Block non-company (and non-test) accounts before they hit the app.
+    // Also allow any email that has been pre-registered as an active Employee.
+    async signIn({ account, profile }) {
       if (account?.provider === "google") {
-        return !!profile?.email && isEmailAllowed(profile.email);
+        if (!profile?.email) return false;
+        if (isEmailAllowed(profile.email)) return true;
+        const employee = await db.employee.findUnique({
+          where: { email: profile.email },
+          select: { isActive: true },
+        });
+        return employee?.isActive === true;
       }
       return false;
     },
