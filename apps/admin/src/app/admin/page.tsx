@@ -68,7 +68,7 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="gray">Admin</Badge>
-                    {user.id !== session?.user.id && (
+                    {user.id !== session?.user?.id && (
                       <Button
                         variant="outline"
                         size="sm"

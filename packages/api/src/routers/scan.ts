@@ -2,11 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure, adminProcedure } from "../trpc/init";
 import { ingestScan } from "../services/scan-ingestion";
 
-<<<<<<< HEAD:packages/api/src/routers/scan.ts
-// Shared input schema — mirrors the REST /api/scan body.
-=======
-// Input schema for the web UI simulator's manual scan ingestion.
->>>>>>> main:src/server/api/routers/scan.ts
 export const scanInputSchema = z.object({
   tagId: z.string().min(1).max(256),
   deviceId: z.string().min(1).max(64),
@@ -59,7 +54,7 @@ export const scanRouter = createTRPCRouter({
       _max: { scannedAt: true },
     });
 
-    return rows.map((r) => ({
+    return rows.map((r: { tagId: any; _count: { tagId: any; }; _min: { scannedAt: any; }; _max: { scannedAt: any; }; }) => ({
       tagId: r.tagId,
       count: r._count.tagId,
       firstSeen: r._min.scannedAt,

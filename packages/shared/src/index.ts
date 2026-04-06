@@ -3,8 +3,8 @@ export * from "./lib/format";
 export * from "./lib/utils";
 
 // components
-export * from "./components/ui/Badge";
-export * from "./components/ui/Card";
+export * from "./components/ui/badge";
+export * from "./components/ui/card";
 export * from "./components/ui/button";
 export * from "./components/ui/input";
 export * from "./components/ui/label";

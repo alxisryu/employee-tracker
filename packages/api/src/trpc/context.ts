@@ -30,7 +30,7 @@ export async function createTRPCContext({ req }: { req: Request }): Promise<TRPC
   if (rawToken) {
     try {
       // `decode` verifies the NextAuth JWT (JWE-encrypted with AUTH_SECRET).
-      const decoded = await decode({ token: rawToken, secret: env.AUTH_SECRET });
+      const decoded = await decode({ token: rawToken, secret: env.AUTH_SECRET, salt: "authjs.session-token" });
       if (decoded) {
         session = {
           user: {

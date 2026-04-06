@@ -60,34 +60,19 @@ export async function generatePkpass(
       serialNumber: qrToken,
       description: "Office Attendance Pass",
       organizationName: "Lyra Technologies",
-      // Generic pass with a QR barcode.
-      barcodes: [
-        {
-          message: qrToken,
-          format: "PKBarcodeFormatQR",
-          messageEncoding: "iso-8859-1",
-        },
-      ],
-      generic: {
-        primaryFields: [
-          {
-            key: "name",
-            label: "Employee",
-            value: employee.name,
-          },
-        ],
-        secondaryFields: employee.email
-          ? [
-              {
-                key: "email",
-                label: "Email",
-                value: employee.email,
-              },
-            ]
-          : [],
-      },
     },
   );
+
+  pass.primaryFields.push({ key: "name", label: "Employee", value: employee.name });
+  if (employee.email) {
+    pass.secondaryFields.push({ key: "email", label: "Email", value: employee.email });
+  }
+
+  pass.setBarcodes({
+    message: qrToken,
+    format: "PKBarcodeFormatQR",
+    messageEncoding: "iso-8859-1",
+  });
 
   return pass.getAsBuffer();
 }
