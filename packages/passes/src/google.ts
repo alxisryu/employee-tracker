@@ -1,4 +1,4 @@
-import { GoogleAuth } from "google-auth-library";
+import jwt from "jsonwebtoken";
 
 export interface PassEmployee {
   name: string;
@@ -9,10 +9,9 @@ export interface PassEmployee {
  * Generate a Google Wallet pass save URL for an employee.
  *
  * Required environment variables:
- *   GOOGLE_WALLET_ISSUER_ID         - Your Google Pay & Wallet issuer ID
- *   GOOGLE_WALLET_CLASS_ID          - The loyalty class ID (pre-created in Google Wallet console)
- *   GOOGLE_APPLICATION_CREDENTIALS  - Path to Google service account JSON key file
- *                                     (or set GOOGLE_SERVICE_ACCOUNT_JSON as raw JSON)
+ *   GOOGLE_WALLET_ISSUER_ID       - Your Google Pay & Wallet issuer ID (long number)
+ *   GOOGLE_WALLET_CLASS_ID        - The generic class ID (just the suffix, e.g. "ENG")
+ *   GOOGLE_SERVICE_ACCOUNT_JSON   - Full contents of the service account JSON key file
  *
  * @param employee   Employee name and email for the pass object.
  * @param qrToken    The token encoded in the pass barcode (same as Tag.tagId).
@@ -22,86 +21,59 @@ export async function generateGoogleWalletSaveUrl(
   employee: PassEmployee,
   qrToken: string,
 ): Promise<string> {
-  const { GOOGLE_WALLET_ISSUER_ID, GOOGLE_WALLET_CLASS_ID } = process.env;
+  const { GOOGLE_WALLET_ISSUER_ID, GOOGLE_WALLET_CLASS_ID, GOOGLE_SERVICE_ACCOUNT_JSON } = process.env;
 
-  if (!GOOGLE_WALLET_ISSUER_ID || !GOOGLE_WALLET_CLASS_ID) {
+  if (!GOOGLE_WALLET_ISSUER_ID || !GOOGLE_WALLET_CLASS_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
     throw new Error(
-      "Google Wallet configuration is incomplete. Set GOOGLE_WALLET_ISSUER_ID and GOOGLE_WALLET_CLASS_ID.",
+      "Google Wallet configuration is incomplete. Set GOOGLE_WALLET_ISSUER_ID, GOOGLE_WALLET_CLASS_ID, and GOOGLE_SERVICE_ACCOUNT_JSON.",
     );
   }
 
-  // Resolve credentials — support both file path and inline JSON.
-  let credentials: object | undefined;
-  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON) as object;
-  }
+  const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON) as {
+    client_email: string;
+    private_key: string;
+  };
 
-  const auth = new GoogleAuth({
-    credentials,
-    scopes: ["https://www.googleapis.com/auth/wallet_object.issuer"],
-  });
-  const client = await auth.getClient();
+  const issuerId = GOOGLE_WALLET_ISSUER_ID;
+  const classId = `${issuerId}.${GOOGLE_WALLET_CLASS_ID}`;
+  const objectId = `${issuerId}.${qrToken}`;
 
-  const objectId = `${GOOGLE_WALLET_ISSUER_ID}.${qrToken}`;
-  const classId = `${GOOGLE_WALLET_ISSUER_ID}.${GOOGLE_WALLET_CLASS_ID}`;
-
-  const passObject = {
+  const genericObject = {
     id: objectId,
     classId,
     state: "ACTIVE",
+    cardTitle: {
+      defaultValue: { language: "en-AU", value: "Office Attendance" },
+    },
+    subheader: {
+      defaultValue: { language: "en-AU", value: "Employee" },
+    },
+    header: {
+      defaultValue: { language: "en-AU", value: employee.name },
+    },
     barcode: {
       type: "QR_CODE",
       value: qrToken,
       alternateText: employee.name,
     },
     textModulesData: [
-      {
-        header: "Employee",
-        body: employee.name,
-        id: "employee_name",
-      },
       ...(employee.email
-        ? [
-            {
-              header: "Email",
-              body: employee.email,
-              id: "employee_email",
-            },
-          ]
+        ? [{ id: "email", header: "Email", body: employee.email }]
         : []),
     ],
-    cardTitle: {
-      defaultValue: {
-        language: "en-AU",
-        value: "Office Attendance",
-      },
-    },
-    header: {
-      defaultValue: {
-        language: "en-AU",
-        value: employee.name,
-      },
-    },
   };
 
-  // Sign a JWT containing the pass object so the user can save it directly.
-  const tokenPayload = {
-    iss: (credentials as { client_email?: string } | undefined)?.client_email ??
-         (await auth.getCredentials()).client_email,
+  const claims = {
+    iss: serviceAccount.client_email,
     aud: "google",
-    origins: [],
+    origins: ["http://localhost:3000", "http://localhost:3001"],
     typ: "savetowallet",
     payload: {
-      loyaltyObjects: [passObject],
+      genericObjects: [genericObject],
     },
   };
 
-  const token = await (client as { sign?: (payload: object) => Promise<string> }).sign?.(tokenPayload);
-  if (!token) {
-    // Fallback: sign manually using the auth client's key
-    const jwt = await auth.sign(JSON.stringify(tokenPayload));
-    return `https://pay.google.com/gp/v/save/${jwt}`;
-  }
+  const token = jwt.sign(claims, serviceAccount.private_key, { algorithm: "RS256" });
 
   return `https://pay.google.com/gp/v/save/${token}`;
 }

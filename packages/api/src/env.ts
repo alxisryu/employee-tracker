@@ -27,7 +27,7 @@ export const env = createEnv({
     PORT: z.string().default("4000"),
 
     // CORS origins — comma-separated.
-    CORS_ORIGINS: z.string().default("http://localhost:3001,http://localhost:3002"),
+    CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:3001,http://localhost:3002"),
 
     // Apple Wallet (optional — only needed when generating passes).
     APPLE_WWDR_CERT_PATH: z.string().optional(),
