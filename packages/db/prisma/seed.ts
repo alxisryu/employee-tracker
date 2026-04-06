@@ -84,8 +84,6 @@ async function main() {
 
   // ── Tags (QR wallet tokens) ───────────────────────────────────────────────
 
-  // Each employee gets a QR wallet token (UUID-derived, uppercase, no hyphens).
-  // These are the tagIds stored in the Tag table and encoded in wallet passes.
   const alexisToken = "A1B2C3D4E5F64A5B8C9D0E1F2A3B4C5D";
   const samToken    = "B2C3D4E5F6A74B5C9D0E1F2A3B4C5D6E";
   const jordanToken = "C3D4E5F6A7B84C5D0E1F2A3B4C5D6E7F";
@@ -93,49 +91,26 @@ async function main() {
   await prisma.tag.upsert({
     where: { tagId: alexisToken },
     update: {},
-    create: {
-      tagId: alexisToken,
-      isActive: true,
-      passType: "QR_WALLET",
-      passIssuedAt: new Date(),
-      employeeId: alexis.id,
-    },
+    create: { tagId: alexisToken, isActive: true, passType: "QR_WALLET", passIssuedAt: new Date(), employeeId: alexis.id },
   });
 
   await prisma.tag.upsert({
     where: { tagId: samToken },
     update: {},
-    create: {
-      tagId: samToken,
-      isActive: true,
-      passType: "QR_WALLET",
-      passIssuedAt: new Date(),
-      employeeId: sam.id,
-    },
+    create: { tagId: samToken, isActive: true, passType: "QR_WALLET", passIssuedAt: new Date(), employeeId: sam.id },
   });
 
   await prisma.tag.upsert({
     where: { tagId: jordanToken },
     update: {},
-    create: {
-      tagId: jordanToken,
-      isActive: true,
-      passType: "QR_WALLET",
-      passIssuedAt: new Date(),
-      employeeId: jordan.id,
-    },
+    create: { tagId: jordanToken, isActive: true, passType: "QR_WALLET", passIssuedAt: new Date(), employeeId: jordan.id },
   });
 
   // An unassigned tag — produces UNKNOWN_TAG outcomes until assigned.
   await prisma.tag.upsert({
     where: { tagId: "TAG_UNKNOWN_X" },
     update: {},
-    create: {
-      tagId: "TAG_UNKNOWN_X",
-      label: null,
-      isActive: true,
-      employeeId: null,
-    },
+    create: { tagId: "TAG_UNKNOWN_X", label: null, isActive: true, employeeId: null },
   });
 
   console.log("Tags (QR wallet tokens) seeded.");
@@ -146,60 +121,21 @@ async function main() {
     await prisma.attendanceState.upsert({
       where: { employeeId: employee.id },
       update: {},
-      create: {
-        employeeId: employee.id,
-        status: "OUT",
-      },
+      create: { employeeId: employee.id, status: "OUT" },
     });
   }
 
   // ── Historical scan events ────────────────────────────────────────────────
 
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const makeTime = (hoursAgo: number) =>
-    new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+  const makeTime = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
 
   const historicalEvents = [
-    {
-      tagId: alexisToken,
-      rawTagId: alexisToken,
-      deviceId: kioskDevice.id,
-      employeeId: alexis.id,
-      scannedAt: new Date(yesterday.setHours(9, 0, 0, 0)),
-      outcome: ScanOutcome.ACCEPTED_IN,
-    },
-    {
-      tagId: alexisToken,
-      rawTagId: alexisToken,
-      deviceId: kioskDevice.id,
-      employeeId: alexis.id,
-      scannedAt: new Date(yesterday.setHours(17, 30, 0, 0)),
-      outcome: ScanOutcome.ACCEPTED_OUT,
-    },
-    {
-      tagId: samToken,
-      rawTagId: samToken,
-      deviceId: kioskDevice.id,
-      employeeId: sam.id,
-      scannedAt: new Date(yesterday.setHours(9, 15, 0, 0)),
-      outcome: ScanOutcome.ACCEPTED_IN,
-    },
-    {
-      tagId: samToken,
-      rawTagId: samToken,
-      deviceId: kioskDevice.id,
-      employeeId: sam.id,
-      scannedAt: new Date(yesterday.setHours(9, 15, 10, 0)),
-      outcome: ScanOutcome.DUPLICATE_IGNORED,
-    },
-    {
-      tagId: "TAG_UNKNOWN_X",
-      rawTagId: "TAG_UNKNOWN_X",
-      deviceId: mockCliDevice.id,
-      employeeId: null,
-      scannedAt: makeTime(3),
-      outcome: ScanOutcome.UNKNOWN_TAG,
-    },
+    { tagId: alexisToken, rawTagId: alexisToken, deviceId: kioskDevice.id, employeeId: alexis.id, scannedAt: new Date(yesterday.setHours(9, 0, 0, 0)), outcome: ScanOutcome.ACCEPTED_IN },
+    { tagId: alexisToken, rawTagId: alexisToken, deviceId: kioskDevice.id, employeeId: alexis.id, scannedAt: new Date(yesterday.setHours(17, 30, 0, 0)), outcome: ScanOutcome.ACCEPTED_OUT },
+    { tagId: samToken, rawTagId: samToken, deviceId: kioskDevice.id, employeeId: sam.id, scannedAt: new Date(yesterday.setHours(9, 15, 0, 0)), outcome: ScanOutcome.ACCEPTED_IN },
+    { tagId: samToken, rawTagId: samToken, deviceId: kioskDevice.id, employeeId: sam.id, scannedAt: new Date(yesterday.setHours(9, 15, 10, 0)), outcome: ScanOutcome.DUPLICATE_IGNORED },
+    { tagId: "TAG_UNKNOWN_X", rawTagId: "TAG_UNKNOWN_X", deviceId: mockCliDevice.id, employeeId: null, scannedAt: makeTime(3), outcome: ScanOutcome.UNKNOWN_TAG },
   ];
 
   for (const event of historicalEvents) {
@@ -211,8 +147,5 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
+  .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { SessionProvider } from "next-auth/react";
+import { Providers } from "~/components/providers";
+import { auth } from "~/server/auth";
 import "~/app/globals.css";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Nav } from "~/components/ui/Nav";
@@ -9,18 +10,19 @@ export const metadata: Metadata = {
   description: "Office check-in portal",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <SessionProvider>
+      <body className="min-h-screen overflow-y-scroll bg-background text-foreground antialiased">
+        <Providers session={session}>
           <TRPCReactProvider>
             <div className="flex min-h-screen flex-col">
               <Nav />
-              <main className="flex-1 p-6">{children}</main>
+              <main className="flex-1 py-6">{children}</main>
             </div>
           </TRPCReactProvider>
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   );

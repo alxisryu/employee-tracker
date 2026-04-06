@@ -50,8 +50,6 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role      @default(EMPLOYEE)
-  // Linked employee record. Null until the user first signs in and the
-  // createUser event links or creates their Employee row.
   employeeId    String?   @unique
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -113,8 +111,6 @@ model Employee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation back to the User who owns this employee record.
-  // Null if the employee has never signed in (admin-created record).
   user       User?
   tags       Tag[]
   scanEvents ScanEvent[]
@@ -129,7 +125,6 @@ model Tag {
   employeeId   String?
   label        String?
   isActive     Boolean   @default(true)
-  // QR wallet pass fields — null for legacy NFC tags.
   passType     PassType?
   passIssuedAt DateTime?
   createdAt    DateTime  @default(now())

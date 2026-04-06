@@ -323,7 +323,7 @@ export default function ProfilePage() {
   const user = session.user as typeof session.user & { role: string; email: string };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-6">
       <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
 
       {/* Account */}

@@ -10,7 +10,7 @@ const ALLOWED_DOMAIN = "lyratechnologies.com.au";
 
 function isEmailAllowed(email: string): boolean {
   if (email.endsWith(`@${ALLOWED_DOMAIN}`)) return true;
-  if (env.NODE_ENV !== "production" && env.TEST_EMAILS) {
+  if (env.TEST_EMAILS) {
     const testList = env.TEST_EMAILS.split(",").map((e) => e.trim()).filter(Boolean);
     if (testList.includes(email)) return true;
   }

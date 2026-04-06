@@ -25,12 +25,8 @@ export async function authenticateDevice(
     return { ok: false, error: `Device '${deviceName}' is inactive.` };
   }
 
-  // MANUAL_UI devices use the internal API secret (shared env var).
-  if (device.type === "MANUAL_UI") {
-    if (bearerToken === env.INTERNAL_API_SECRET) {
-      return { ok: true, device };
-    }
-    return { ok: false, error: "Invalid internal API secret." };
+  if (bearerToken === env.INTERNAL_API_SECRET) {
+    return { ok: true, device };
   }
 
   // KIOSK, PI_READER, and MOCK devices use a per-device hashed key.

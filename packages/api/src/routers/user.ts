@@ -17,12 +17,10 @@ export const userRouter = createTRPCRouter({
   ),
 
   setRole: adminProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        role: z.enum(["ADMIN", "EMPLOYEE"]),
-      }),
-    )
+    .input(z.object({
+      userId: z.string(),
+      role: z.enum(["ADMIN", "EMPLOYEE"]),
+    }))
     .mutation(async ({ ctx, input }) => {
       if (input.userId === ctx.session.user.id && input.role === "EMPLOYEE") {
         throw new TRPCError({
