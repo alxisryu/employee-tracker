@@ -5,6 +5,8 @@ import { deviceRouter } from "../routers/device";
 import { scanRouter } from "../routers/scan";
 import { dashboardRouter } from "../routers/dashboard";
 import { passesRouter } from "../routers/passes";
+import { userRouter } from "../routers/user";
+import { reportRouter } from "../routers/report";
 
 export const appRouter = createTRPCRouter({
   employee: employeeRouter,
@@ -13,6 +15,8 @@ export const appRouter = createTRPCRouter({
   scan: scanRouter,
   dashboard: dashboardRouter,
   passes: passesRouter,
+  user: userRouter,
+  report: reportRouter,
 });
 
 export type AppRouter = typeof appRouter;

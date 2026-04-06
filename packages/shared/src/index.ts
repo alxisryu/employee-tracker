@@ -11,3 +11,4 @@ export * from "./components/ui/label";
 export * from "./components/ui/select";
 export * from "./components/ui/separator";
 export * from "./components/ui/avatar";
+export * from "./components/ui/confirm-dialog";
