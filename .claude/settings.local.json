@@ -15,7 +15,10 @@
       "Bash(git pull:*)",
       "Bash(git reset:*)",
       "Bash(git clean:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(npx prisma:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl -s http://localhost:4000/health)"
     ]
   }
 }
