@@ -51,10 +51,12 @@ export function Nav() {
                   {(session.user.name ?? session.user.email ?? "?")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:block">{session.user.name ?? session.user.email}</span>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                Admin
-              </span>
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <span>{session.user.name ?? session.user.email}</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm font-medium text-primary">
+                  Admin
+                </span>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
               Sign out
