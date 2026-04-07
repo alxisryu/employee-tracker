@@ -104,7 +104,7 @@ export default function EmployeesPage() {
           ) : (
             <div className="w-full text-sm">
               <div className="flex border-b border-border pb-2 text-xs font-medium uppercase text-muted-foreground">
-                <div className="w-[12%] pr-4">
+                <div className="w-[13%] min-w-0 pr-4">
                   <button
                     className="flex items-center gap-1 uppercase tracking-wide hover:text-foreground transition-colors"
                     onClick={() => { setSortDir((d) => d === "asc" ? "desc" : "asc"); setPage(0); }}
@@ -112,13 +112,13 @@ export default function EmployeesPage() {
                     Name {sortDir === "asc" ? "↑" : "↓"}
                   </button>
                 </div>
-                <div className="w-[18%] pr-4">Email</div>
-                <div className="w-[8%] pr-4">Status</div>
-                <div className="w-[8%] pr-4">Presence</div>
-                <div className="w-[8%] pr-4">Sign-in</div>
-                <div className="w-[12%] pr-4">QR Pass</div>
-                <div className="w-[14%] pr-4">Tags</div>
-                <div className="w-[20%]">Actions</div>
+                <div className="w-[16%] min-w-0 pr-4">Email</div>
+                <div className="w-[7%] min-w-0 pr-4">Status</div>
+                <div className="w-[7%] min-w-0 pr-4">Presence</div>
+                <div className="w-[9%] min-w-0 pr-4">Sign-in</div>
+                <div className="w-[11%] min-w-0 pr-4">QR Pass</div>
+                <div className="w-[11%] min-w-0 pr-4">Tags</div>
+                <div className="w-[26%] min-w-0 pl-3">Actions</div>
               </div>
 
               {paged.length === 0 && (
@@ -131,14 +131,14 @@ export default function EmployeesPage() {
                 const activePass = emp.tags.find((t) => t.passType === "QR_WALLET" && t.isActive);
                 return (
                   <div key={emp.id} className="flex h-[53px] items-center overflow-hidden border-b border-border">
-                    <div className="w-[12%] min-w-0 pr-4 font-medium truncate">{emp.name}</div>
-                    <div className="w-[18%] min-w-0 pr-4 text-muted-foreground truncate">{emp.email ?? "—"}</div>
-                    <div className="w-[8%] pr-4">
+                    <div className="w-[13%] min-w-0 pr-4 font-medium truncate">{emp.name}</div>
+                    <div className="w-[16%] min-w-0 pr-4 text-muted-foreground truncate">{emp.email ?? "—"}</div>
+                    <div className="w-[7%] min-w-0 pr-4">
                       <Badge variant={emp.isActive ? "green" : "gray"}>
                         {emp.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </div>
-                    <div className="w-[8%] pr-4">
+                    <div className="w-[7%] min-w-0 pr-4">
                       {emp.attendance ? (
                         <Badge variant={emp.attendance.status === "IN" ? "green" : "gray"}>
                           {emp.attendance.status}
@@ -147,7 +147,7 @@ export default function EmployeesPage() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </div>
-                    <div className="w-[8%] pr-4">
+                    <div className="w-[9%] min-w-0 pr-4">
                       {!emp.email ? (
                         <span className="text-xs text-muted-foreground">No email</span>
                       ) : emp.user ? (
@@ -156,9 +156,9 @@ export default function EmployeesPage() {
                         <Badge variant="gray" className="whitespace-nowrap">Pending</Badge>
                       )}
                     </div>
-                    <div className="w-[12%] pr-4">
+                    <div className="w-[11%] min-w-0 pr-4">
                       {activePass ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 whitespace-nowrap">
                           <Badge variant="blue">Issued</Badge>
                           <Button
                             variant="ghost"
@@ -178,17 +178,17 @@ export default function EmployeesPage() {
                         <span className="text-xs text-muted-foreground">None</span>
                       )}
                     </div>
-                    <div className="w-[14%] min-w-0 overflow-hidden pr-4">
-                      <div className="flex flex-wrap gap-1 overflow-hidden">
+                    <div className="w-[11%] min-w-0 overflow-hidden pr-4">
+                      <div className="flex flex-nowrap gap-1 overflow-hidden">
                         {emp.tags.length === 0 ? (
                           <span className="text-xs text-muted-foreground">No tags</span>
                         ) : (
                           emp.tags.map((tag) => (
                             <span
                               key={tag.id}
-                              className="flex min-w-0 items-center gap-1 rounded-md bg-muted px-2 py-0.5 font-mono text-xs"
+                              className="flex shrink-0 items-center gap-1 rounded-md bg-muted px-2 py-0.5 font-mono text-xs"
                             >
-                              <span className="truncate">{tag.tagId}</span>
+                              <span className="max-w-[80px] truncate">{tag.tagId}</span>
                               <button
                                 onClick={() => removeTag.mutate({ tagId: tag.id })}
                                 className="text-muted-foreground hover:text-destructive"
@@ -201,7 +201,7 @@ export default function EmployeesPage() {
                         )}
                       </div>
                     </div>
-                    <div className="w-[20%]">
+                    <div className="w-[26%] min-w-0">
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => setAssignTarget(emp.id)}>
                           Assign tag
