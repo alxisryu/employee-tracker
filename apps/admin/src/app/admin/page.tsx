@@ -19,7 +19,7 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6 px-6">
         <h1 className="text-2xl font-bold tracking-tight">Admin Management</h1>
         <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
@@ -30,7 +30,7 @@ export default function AdminPage() {
   const employees = users?.filter((u) => u.role === "EMPLOYEE") ?? [];
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6">
+    <main className="mx-auto max-w-7xl space-y-6 px-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Management</h1>
         <p className="mt-1 text-sm text-muted-foreground">
