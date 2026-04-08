@@ -57,6 +57,17 @@ export async function ingestScan(input: IngestScanInput): Promise<IngestScanResu
   });
 
   if (!tag) {
+    // Unknown tag — record a placeholder Tag row (inactive, unassigned) so the
+    // ScanEvent FK is satisfied, then log the event for audit/assignment workflow.
+    await db.tag.upsert({
+      where: { tagId },
+      create: {
+        tagId,
+        label: "Unregistered",
+        isActive: false,
+      },
+      update: {},
+    });
     const event = await db.scanEvent.create({
       data: {
         tagId,
@@ -258,8 +269,6 @@ export interface IngestByEmployeeIdInput {
 }
 
 export async function ingestByEmployeeId(input: IngestByEmployeeIdInput): Promise<IngestScanResult> {
-  const scannedAt = input.scannedAt ? new Date(input.scannedAt) : new Date();
-
   // Resolve device
   let device = input.device;
   if (!device) {
@@ -285,16 +294,21 @@ export async function ingestByEmployeeId(input: IngestByEmployeeIdInput): Promis
   });
 
   if (!employee) {
-    return {
-      outcome: ScanOutcome.UNKNOWN_TAG,
-      scanEventId: "",
-      message: "Employee not found.",
-    };
+    // Not an employee ID or email — try treating it as a tag ID (e.g. NFC/QR hex UID).
+    return ingestScan({
+      tagId: input.employeeId,
+      deviceId: input.deviceId,
+      scannedAt: input.scannedAt,
+      rawPayload: input.rawPayload,
+      device,
+    });
   }
 
   // Ensure a virtual "QR Pass" tag exists for this employee.
   // This gives the scan event a valid tagId FK without schema changes.
-  const virtualTagId = `QR_${employee.id}`;
+  // normalizeTagId is applied here so the stored tagId matches what ingestScan
+  // will look up after normalisation (which uppercases, etc.).
+  const virtualTagId = normalizeTagId(`QR_${employee.id}`);
   await db.tag.upsert({
     where: { tagId: virtualTagId },
     create: {

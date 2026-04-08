@@ -11,7 +11,7 @@
  *   5. CUID — starts with "cl" followed by alphanumeric
  */
 
-export type QrFormat = 'raw_uuid' | 'raw_cuid' | 'json' | 'url_query' | 'url_path' | 'unknown';
+export type QrFormat = 'raw_uuid' | 'raw_cuid' | 'raw_hex' | 'json' | 'url_query' | 'url_path' | 'unknown';
 
 export interface ScanParseResult {
   employeeUuid: string | null;
@@ -22,6 +22,9 @@ export interface ScanParseResult {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CUID_RE = /^c[a-z0-9]{24,}$/i;
+// NFC tag UIDs are typically 4–10 bytes encoded as uppercase hex (8–20 chars).
+// We accept 8–40 hex chars to cover all common UID formats.
+const HEX_RE = /^[0-9a-f]{8,40}$/i;
 
 function isUuidOrCuid(value: string): boolean {
   return UUID_RE.test(value) || CUID_RE.test(value);
@@ -30,12 +33,15 @@ function isUuidOrCuid(value: string): boolean {
 export function parseQrCode(raw: string): ScanParseResult {
   const trimmed = raw.trim();
 
-  // 1. Raw UUID or CUID
+  // 1. Raw UUID, CUID, or hex NFC tag UID
   if (UUID_RE.test(trimmed)) {
     return { employeeUuid: trimmed, rawValue: raw, format: 'raw_uuid', isValid: true };
   }
   if (CUID_RE.test(trimmed)) {
     return { employeeUuid: trimmed, rawValue: raw, format: 'raw_cuid', isValid: true };
+  }
+  if (HEX_RE.test(trimmed)) {
+    return { employeeUuid: trimmed.toUpperCase(), rawValue: raw, format: 'raw_hex', isValid: true };
   }
 
   // 2. JSON payload

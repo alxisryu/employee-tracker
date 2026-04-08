@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { ScreenContainer } from '@/src/components/ScreenContainer';
 import { GuestSignInForm } from '@/src/components/GuestSignInForm';
+import { NeuCard } from '@/src/components/NeuCard';
 import { colors, typography } from '@/src/theme';
 import { config } from '@/constants/config';
 import type { KioskAction, GuestData } from '@/src/state/kiosk-machine';
@@ -11,7 +12,7 @@ interface GuestScreenProps {
 }
 
 export function GuestScreen({ dispatch }: GuestScreenProps) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     timerRef.current = setTimeout(() => {
@@ -20,23 +21,19 @@ export function GuestScreen({ dispatch }: GuestScreenProps) {
     return () => clearTimeout(timerRef.current);
   }, []);
 
-  const handleSubmit = (data: GuestData) => {
-    dispatch({ type: 'GUEST_SUBMIT', payload: data });
-  };
-
   return (
     <ScreenContainer>
       <View style={styles.root}>
-        <View style={styles.card}>
+        <NeuCard style={styles.card} radius={28}>
           <Text style={[typography.title, styles.title]}>Guest sign-in</Text>
           <Text style={[typography.body, styles.sub]}>
             Fill in your details to register your visit
           </Text>
           <GuestSignInForm
-            onSubmit={handleSubmit}
+            onSubmit={(data: GuestData) => dispatch({ type: 'GUEST_SUBMIT', payload: data })}
             onCancel={() => dispatch({ type: 'RESET' })}
           />
-        </View>
+        </NeuCard>
       </View>
     </ScreenContainer>
   );
@@ -50,10 +47,6 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   card: {
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 28,
     padding: 40,
     width: '100%',
     maxWidth: 560,

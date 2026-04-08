@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/src/components/ScreenContainer';
 import { AnimatedCheckmark } from '@/src/components/AnimatedCheckmark';
 import { KioskButton } from '@/src/components/KioskButton';
+import { NeuCard } from '@/src/components/NeuCard';
 import { colors, typography } from '@/src/theme';
 import { config } from '@/constants/config';
 import type { KioskState, KioskAction } from '@/src/state/kiosk-machine';
@@ -25,11 +26,19 @@ export function SuccessScreen({ state, dispatch }: SuccessScreenProps) {
   return (
     <ScreenContainer>
       <View style={styles.root}>
-        <View style={styles.card}>
+        <NeuCard style={styles.card} radius={28}>
           <AnimatedCheckmark size={88} />
           <View style={styles.text}>
             <Text style={[typography.title, styles.headline]}>
-              {state.employeeName ? `Welcome, ${state.employeeName}` : 'Checked in'}
+              {(() => {
+                const isCheckOut = state.successOutcome === 'ACCEPTED_OUT';
+                if (state.employeeName) {
+                  return isCheckOut
+                    ? `See you later, ${state.employeeName}`
+                    : `Welcome, ${state.employeeName}`;
+                }
+                return isCheckOut ? 'Checked out' : 'Checked in';
+              })()}
             </Text>
             <Text style={[typography.body, styles.sub]}>
               {state.successMessage ?? 'Your sign-in was successful'}
@@ -41,7 +50,7 @@ export function SuccessScreen({ state, dispatch }: SuccessScreenProps) {
             size="md"
             onPress={() => dispatch({ type: 'RESET' })}
           />
-        </View>
+        </NeuCard>
       </View>
     </ScreenContainer>
   );
@@ -54,10 +63,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: colors.successDim,
-    borderWidth: 1,
-    borderColor: colors.success,
-    borderRadius: 28,
     padding: 52,
     alignItems: 'center',
     gap: 28,

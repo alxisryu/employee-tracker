@@ -28,6 +28,7 @@ import { authenticateDevice, extractBearerToken } from "~/server/services/device
 import { ingestByEmployeeId } from "~/server/services/scan-ingestion";
 import { ScanOutcome } from "@prisma/client";
 
+
 const bodySchema = z.object({
   employeeId: z.string().min(1).max(256),
   deviceId: z.string().min(1).max(64),

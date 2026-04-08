@@ -1,6 +1,5 @@
 import React, { useReducer, useCallback, useRef } from 'react';
-import { StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, View } from 'react-native';
 import { kioskReducer, initialKioskState, KioskAction } from '@/src/state/kiosk-machine';
 import { IdleScreen } from '@/src/screens/IdleScreen';
 import { ProcessingScreen } from '@/src/screens/ProcessingScreen';
@@ -11,7 +10,6 @@ import { GuestScreen } from '@/src/screens/GuestScreen';
 
 export default function KioskApp() {
   const [state, dispatch] = useReducer(kioskReducer, initialKioskState);
-  // Prevent duplicate dispatches from concurrent events
   const isProcessing = useRef(false);
 
   const safeDispatch = useCallback((action: KioskAction) => {
@@ -47,20 +45,15 @@ export default function KioskApp() {
   };
 
   return (
-    <LinearGradient
-      colors={['#9B5DE5', '#7B61FF', '#4361EE']}
-      locations={[0, 0.45, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.root}
-    >
+    <View style={styles.root}>
       {renderScreen()}
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: '#E0E5EC',
   },
 });

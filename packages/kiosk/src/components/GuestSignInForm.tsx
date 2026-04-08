@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { KioskButton } from './KioskButton';
 import { colors, typography } from '@/src/theme';
+import { FONT } from '@/src/theme/typography';
 
 const schema = z.object({
   fullName: z.string().min(1, 'Full name is required').max(128),
@@ -81,6 +82,7 @@ const fieldStyles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     fontSize: 18,
+    fontFamily: FONT,
     color: colors.inputText,
   },
   inputError: { borderColor: colors.error },
