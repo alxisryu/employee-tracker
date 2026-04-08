@@ -30,12 +30,13 @@ export function ProcessingScreen({ state, dispatch, onComplete }: ProcessingScre
           if (!cancelled) {
             dispatch({
               type: 'SUBMIT_SUCCESS',
-              payload: { employeeName: res.employeeName, message: res.message },
+              payload: { employeeName: res.employeeName, message: res.message, outcome: res.outcome },
             });
           }
         }
       } catch (err) {
         if (cancelled) return;
+        console.error('[ProcessingScreen] submit failed:', err);
         let errorType: ErrorType = 'unknown';
         let message = 'An unexpected error occurred.';
 
@@ -50,7 +51,8 @@ export function ProcessingScreen({ state, dispatch, onComplete }: ProcessingScre
             errorType = 'backend';
             message = err.message;
           }
-        } else if (err instanceof TypeError && String(err).includes('fetch')) {
+        } else if (err instanceof TypeError) {
+          // React Native throws "Network request failed"; browser fetch throws "Failed to fetch"
           errorType = 'network';
           message = 'Network unavailable. Please try again.';
         }
@@ -86,8 +88,8 @@ const styles = StyleSheet.create({
   card: {
     padding: 52,
     alignItems: 'center',
-    gap: 20,
-    minWidth: 280,
+    gap: 28,
+    minWidth: 340,
   },
   label: {
     color: colors.textPrimary,

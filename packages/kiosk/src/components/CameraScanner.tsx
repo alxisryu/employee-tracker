@@ -1,10 +1,12 @@
-import React, { useCallback, useRef } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import React, { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { KioskButton } from './KioskButton';
 import { colors, typography } from '@/src/theme';
 import { parseQrCode } from '@/src/utils/qr-parser';
 import { config } from '@/constants/config';
+
+const DOUBLE_TAP_MS = 300;
 
 interface CameraScannerProps {
   onScan: (employeeId: string) => void;
@@ -13,14 +15,15 @@ interface CameraScannerProps {
 
 export function CameraScanner({ onScan, active = true }: CameraScannerProps) {
   const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState<CameraType>('back');
   const lastScanTime = useRef(0);
   const lastScanValue = useRef('');
+  const lastTapTime = useRef(0);
 
   const handleBarCodeScanned = useCallback(({ data }: { data: string }) => {
     if (!active) return;
 
     const now = Date.now();
-    // Debounce: ignore same value scanned within debounce window
     if (
       data === lastScanValue.current &&
       now - lastScanTime.current < config.scanDebounceMs
@@ -36,6 +39,16 @@ export function CameraScanner({ onScan, active = true }: CameraScannerProps) {
     }
   }, [active, onScan]);
 
+  const handleTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapTime.current < DOUBLE_TAP_MS) {
+      setFacing(f => f === 'front' ? 'back' : 'front');
+      lastTapTime.current = 0;
+    } else {
+      lastTapTime.current = now;
+    }
+  }, []);
+
   if (!permission) {
     return <View style={styles.placeholder} />;
   }
@@ -50,12 +63,19 @@ export function CameraScanner({ onScan, active = true }: CameraScannerProps) {
   }
 
   return (
-    <CameraView
+    <TouchableOpacity
       style={StyleSheet.absoluteFillObject}
-      facing="back"
-      onBarcodeScanned={active ? handleBarCodeScanned : undefined}
-      barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-    />
+      activeOpacity={1}
+      onPress={handleTap}
+    >
+      <CameraView
+        style={StyleSheet.absoluteFillObject}
+        facing={facing}
+        zoom={0.02}
+        onBarcodeScanned={active ? handleBarCodeScanned : undefined}
+        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+      />
+    </TouchableOpacity>
   );
 }
 

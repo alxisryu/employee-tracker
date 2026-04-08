@@ -30,7 +30,15 @@ export function SuccessScreen({ state, dispatch }: SuccessScreenProps) {
           <AnimatedCheckmark size={88} />
           <View style={styles.text}>
             <Text style={[typography.title, styles.headline]}>
-              {state.employeeName ? `Welcome, ${state.employeeName}` : 'Checked in'}
+              {(() => {
+                const isCheckOut = state.successOutcome === 'ACCEPTED_OUT';
+                if (state.employeeName) {
+                  return isCheckOut
+                    ? `See you later, ${state.employeeName}`
+                    : `Welcome, ${state.employeeName}`;
+                }
+                return isCheckOut ? 'Checked out' : 'Checked in';
+              })()}
             </Text>
             <Text style={[typography.body, styles.sub]}>
               {state.successMessage ?? 'Your sign-in was successful'}

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/src/components/ScreenContainer';
 import { ScanFrame } from '@/src/components/ScanFrame';
 import { CameraScanner } from '@/src/components/CameraScanner';
+import { fetchAttendanceCount } from '@/src/services/api';
 import { NeuCard } from '@/src/components/NeuCard';
 import { AnalogClock } from '@/src/components/AnalogClock';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -65,11 +66,25 @@ export function IdleScreen({ dispatch }: IdleScreenProps) {
   const fadeBot = useSharedValue(0);
   const slideY = useSharedValue(8);
 
+  const [employeeCount, setEmployeeCount] = useState<number | null>(null);
+
   useEffect(() => {
     const ease = Easing.bezier(0.33, 1, 0.68, 1);
     fadeTop.value = withTiming(1, { duration: 450, easing: ease });
     slideY.value = withTiming(0, { duration: 450, easing: ease });
     fadeBot.value = withDelay(150, withTiming(1, { duration: 450, easing: ease }));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      fetchAttendanceCount()
+        .then(c => { if (!cancelled) setEmployeeCount(c); })
+        .catch(() => { /* keep last value, fail silently */ });
+    };
+    load();
+    const interval = setInterval(load, 15_000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   const topStyle = useAnimatedStyle(() => ({
@@ -165,7 +180,7 @@ export function IdleScreen({ dispatch }: IdleScreenProps) {
               <Text style={styles.lyraText}>Lyra</Text>
             </View>
             <View style={styles.employeeRow}>
-              <Text style={styles.employeeCount}>12</Text>
+              <Text style={styles.employeeCount}>{employeeCount ?? '–'}</Text>
               <Text style={styles.employeeLabel}>Employees in office</Text>
             </View>
           </NeuCard>

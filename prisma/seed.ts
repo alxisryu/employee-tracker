@@ -101,6 +101,17 @@ async function main() {
     },
   });
 
+  // Placeholder for an unrecognised tag (used in historical scan events below)
+  await prisma.tag.upsert({
+    where: { tagId: "QR_UNKNOWN_X" },
+    update: {},
+    create: {
+      tagId: "QR_UNKNOWN_X",
+      label: "Unknown / unregistered",
+      isActive: false,
+    },
+  });
+
   console.log("Tags seeded.");
 
   // ── Attendance states (all start OUT) ─────────────────────────────────────

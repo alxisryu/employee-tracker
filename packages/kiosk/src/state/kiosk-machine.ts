@@ -13,6 +13,7 @@ export interface KioskState {
   /** Set after success */
   employeeName: string | null;
   successMessage: string | null;
+  successOutcome: string | null;
   /** Set after error */
   errorType: ErrorType | null;
   errorMessage: string | null;
@@ -31,7 +32,7 @@ export type KioskAction =
   | { type: 'SCAN_DETECTED'; payload: ScanParseResult }
   | { type: 'MANUAL_SUBMIT'; payload: { identifier: string } }
   | { type: 'GUEST_SUBMIT'; payload: GuestData }
-  | { type: 'SUBMIT_SUCCESS'; payload: { employeeName?: string; message: string } }
+  | { type: 'SUBMIT_SUCCESS'; payload: { employeeName?: string; message: string; outcome?: string } }
   | { type: 'SUBMIT_ERROR'; payload: { errorType: ErrorType; message: string } }
   | { type: 'SHOW_MANUAL' }
   | { type: 'SHOW_GUEST' }
@@ -44,6 +45,7 @@ export const initialKioskState: KioskState = {
   pendingGuestData: null,
   employeeName: null,
   successMessage: null,
+  successOutcome: null,
   errorType: null,
   errorMessage: null,
   lastScanResult: null,
@@ -82,6 +84,7 @@ export function kioskReducer(state: KioskState, action: KioskAction): KioskState
         screen: 'success',
         employeeName: action.payload.employeeName ?? null,
         successMessage: action.payload.message,
+        successOutcome: action.payload.outcome ?? null,
         pendingEmployeeId: null,
         pendingIdentifier: null,
         pendingGuestData: null,
