@@ -22,7 +22,7 @@ import { NeuCard } from '@/src/components/NeuCard';
 import { AnalogClock } from '@/src/components/AnalogClock';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/src/theme';
-import { FONT_MEDIUM, FONT_BOLD } from '@/src/theme/typography';
+import { FONT_MEDIUM } from '@/src/theme/typography';
 import type { KioskAction } from '@/src/state/kiosk-machine';
 
 const { width, height } = Dimensions.get('window');
