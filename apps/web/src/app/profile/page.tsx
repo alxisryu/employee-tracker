@@ -340,7 +340,7 @@ export default function ProfilePage() {
 
       {/* Employee profile */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Profile</CardTitle>
           {!editingName && profile && (
             <CardAction>

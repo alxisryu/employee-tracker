@@ -28,12 +28,76 @@ function formatDuration(from: Date, to: Date): string {
   return h > 0 ? `${h}h ${min}m` : `${min}m`;
 }
 
+const PAGE_SIZE = 5;
+
+type EmployeeReport = NonNullable<ReturnType<typeof api.report.attendanceReport.useQuery>["data"]>["employees"][number];
+
+function EmployeeRow({ emp }: { emp: EmployeeReport }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button className="w-full text-left" onClick={() => setOpen((o) => !o)}>
+        <CardHeader className="flex-row items-center justify-between py-4">
+          <div>
+            <CardTitle>{emp.name}</CardTitle>
+            {emp.email && <CardDescription>{emp.email}</CardDescription>}
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="gray">{emp.totalScans} scan{emp.totalScans !== 1 ? "s" : ""}</Badge>
+            <span className="text-xs text-muted-foreground">{open ? "▲" : "▼"}</span>
+          </div>
+        </CardHeader>
+      </button>
+      {open && (
+        <CardContent className="pt-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
+                  <th className="pb-2 pr-6">Date</th>
+                  <th className="pb-2 pr-6">First Sign-In</th>
+                  <th className="pb-2 pr-6">Last Sign-Out</th>
+                  <th className="pb-2 pr-6">Duration</th>
+                  <th className="pb-2">Scans</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {emp.days.map((day) => (
+                  <tr key={day.date}>
+                    <td className="py-2.5 pr-6 font-mono text-xs whitespace-nowrap">{day.date}</td>
+                    <td className="py-2.5 pr-6 whitespace-nowrap">
+                      {day.firstIn
+                        ? <span className="font-medium text-green-700">{formatDateTime(day.firstIn)}</span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="py-2.5 pr-6 whitespace-nowrap">
+                      {day.lastOut
+                        ? <span className="font-medium text-blue-700">{formatDateTime(day.lastOut)}</span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="py-2.5 pr-6 text-muted-foreground whitespace-nowrap">
+                      {day.firstIn && day.lastOut ? formatDuration(day.firstIn, day.lastOut) : "—"}
+                    </td>
+                    <td className="py-2.5 whitespace-nowrap"><Badge variant="gray">{day.totalScans}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export default function ReportsPage() {
   const today = toLocalDateString(new Date());
   const thirtyDaysAgo = toLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
   const [fromInput, setFromInput] = useState(thirtyDaysAgo);
   const [toInput, setToInput] = useState(today);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [submittedRange, setSubmittedRange] = useState<{
     from: Date; to: Date; fromStr: string; toStr: string;
   } | null>(null);
@@ -44,6 +108,8 @@ export default function ReportsPage() {
   );
 
   function handleGenerate() {
+    setPage(1);
+    setSearch("");
     setSubmittedRange({
       from: parseDateInput(fromInput),
       to: parseDateInput(toInput),
@@ -78,8 +144,19 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   }
 
+  const filtered = data
+    ? data.employees.filter(
+        (e) =>
+          e.name.toLowerCase().includes(search.toLowerCase()) ||
+          (e.email ?? "").toLowerCase().includes(search.toLowerCase()),
+      )
+    : [];
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(1, totalPages));
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Attendance Report</h1>
@@ -124,55 +201,40 @@ export default function ReportsPage() {
             <Card><CardContent><EmptyState message="No attendance events found for the selected date range." /></CardContent></Card>
           ) : (
             <div className="space-y-4">
-              {data.employees.map((emp) => (
-                <Card key={emp.employeeId}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>{emp.name}</CardTitle>
-                        {emp.email && <CardDescription>{emp.email}</CardDescription>}
+              <Input
+                placeholder="Search by name or email…"
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="max-w-sm"
+              />
+
+              {filtered.length === 0 ? (
+                <Card><CardContent><EmptyState message="No employees match your search." /></CardContent></Card>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {paged.map((emp) => (
+                      <EmployeeRow key={emp.employeeId} emp={emp} />
+                    ))}
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>
+                        {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>←</Button>
+                        <span className="px-2">{safePage} / {totalPages}</span>
+                        <Button variant="outline" size="sm" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>→</Button>
                       </div>
-                      <Badge variant="gray">{emp.totalScans} scan{emp.totalScans !== 1 ? "s" : ""}</Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
-                            <th className="pb-2 pr-6">Date</th>
-                            <th className="pb-2 pr-6">First Sign-In</th>
-                            <th className="pb-2 pr-6">Last Sign-Out</th>
-                            <th className="pb-2 pr-6">Duration</th>
-                            <th className="pb-2">Scans</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {emp.days.map((day) => (
-                            <tr key={day.date}>
-                              <td className="py-2.5 pr-6 font-mono text-xs">{day.date}</td>
-                              <td className="py-2.5 pr-6">
-                                {day.firstIn
-                                  ? <span className="font-medium text-green-700">{formatDateTime(day.firstIn)}</span>
-                                  : <span className="text-muted-foreground">—</span>}
-                              </td>
-                              <td className="py-2.5 pr-6">
-                                {day.lastOut
-                                  ? <span className="font-medium text-blue-700">{formatDateTime(day.lastOut)}</span>
-                                  : <span className="text-muted-foreground">—</span>}
-                              </td>
-                              <td className="py-2.5 pr-6 text-muted-foreground">
-                                {day.firstIn && day.lastOut ? formatDuration(day.firstIn, day.lastOut) : "—"}
-                              </td>
-                              <td className="py-2.5"><Badge variant="gray">{day.totalScans}</Badge></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  )}
+                </>
+              )}
             </div>
           )}
         </>
