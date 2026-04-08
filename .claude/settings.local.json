@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C c:/Users/delia/Desktop/lyra/employee-tracker show fada8c0:src/components/ui/input.tsx)",
+      "Bash(git -C c:/Users/delia/Desktop/lyra/employee-tracker show fada8c0:src/components/ui/select.tsx)",
+      "Bash(git -C c:/Users/delia/Desktop/lyra/employee-tracker show fada8c0:src/components/ui/separator.tsx)",
+      "Bash(curl -s -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: GET\" -X OPTIONS http://localhost:4000/trpc/employee.getMyProfile)",
+      "Bash(curl -sv -H \"Origin: http://localhost:3000\" http://localhost:4000/health)",
+      "Bash(pnpm --filter @employee-tracker/api exec tsc --noEmit)",
+      "Bash(git ls-tree:*)",
+      "Bash(ls *.config.*)",
+      "Bash(git add:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git reset:*)",
+      "Bash(git clean:*)",
+      "Bash(git fetch:*)",
+      "Bash(npx prisma:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl -s http://localhost:4000/health)"
+    ]
+  }
+}

@@ -1,17 +1,76 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: employee_tracker
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/employee_tracker
+      NODE_ENV: production
+      PORT: "4000"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      AUTH_GOOGLE_ID: "${AUTH_GOOGLE_ID}"
+      AUTH_GOOGLE_SECRET: "${AUTH_GOOGLE_SECRET}"
+      ADMIN_EMAILS: "${ADMIN_EMAILS}"
+      TEST_EMAILS: "${TEST_EMAILS:-}"
+      INTERNAL_API_SECRET: "${INTERNAL_API_SECRET}"
+      CRON_SECRET: "${CRON_SECRET}"
+    depends_on:
+      - postgres
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/employee_tracker
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "http://api:4000"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      AUTH_GOOGLE_ID: "${AUTH_GOOGLE_ID}"
+      AUTH_GOOGLE_SECRET: "${AUTH_GOOGLE_SECRET}"
+      ADMIN_EMAILS: "${ADMIN_EMAILS}"
+      TEST_EMAILS: "${TEST_EMAILS:-}"
+      CRON_SECRET: "${CRON_SECRET}"
+    depends_on:
+      - api
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/employee_tracker
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "http://api:4000"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      AUTH_GOOGLE_ID: "${AUTH_GOOGLE_ID}"
+      AUTH_GOOGLE_SECRET: "${AUTH_GOOGLE_SECRET}"
+      ADMIN_EMAILS: "${ADMIN_EMAILS}"
+      TEST_EMAILS: "${TEST_EMAILS:-}"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:

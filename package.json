@@ -2,16 +2,17 @@
   "name": "employee-tracker",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "next lint",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "db:generate": "turbo db:generate --filter=@employee-tracker/db",
+    "db:push": "turbo db:push --filter=@employee-tracker/db",
+    "db:migrate": "turbo db:migrate --filter=@employee-tracker/db",
+    "db:seed": "turbo db:seed --filter=@employee-tracker/db",
+    "db:studio": "turbo db:studio --filter=@employee-tracker/db"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -48,6 +49,8 @@
     }
   },
   "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.5.3",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -55,7 +58,6 @@
     "postcss": "^8.4.39",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.6",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+    "tsx": "^4.16.2"
   }
 }
