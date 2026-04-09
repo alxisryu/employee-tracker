@@ -6,7 +6,7 @@ Office attendance system built for Lyra. Employees scan a QR code on an iPad kio
 
 ## How it works
 
-The iPad kiosk is the core of the system. It runs a fullscreen Expo app mounted at the office entrance. Employees scan their personal QR code (delivered via Apple/Google Wallet) and the kiosk records the check-in. The admin dashboard is a secondary web interface for reviewing attendance, managing employees, and configuring devices.
+An iPad kiosk runs a fullscreen Expo app mounted at the office entrance (landscape/portrait mode available, screen is designed for and will look best on iPad mini). Employees scan their personal QR code (delivered via Apple/Google Wallet) and the kiosk records the check-in. The admin dashboard provides a web interface for reviewing attendance, managing employees, and configuring devices.
 
 ---
 
